@@ -962,12 +962,3 @@ def _rehydrate_skeleton_class(skeleton_class, class_dict):
             skeleton_class.register(subclass)
 
     return skeleton_class
-
-
-"""Constructors for 3rd party libraries
-Note: These can never be renamed due to client compatibility issues"""
-
-
-def _getobject(modname, attribute):
-    mod = __import__(modname, fromlist=[attribute])
-    return mod.__dict__[attribute]
