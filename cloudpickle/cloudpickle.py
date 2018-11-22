@@ -149,7 +149,10 @@ def islambda(func):
     return getattr(func, '__name__') == '<lambda>'
 
 
-_BUILTIN_TYPE_NAMES = {}
+_BUILTIN_TYPE_NAMES = {
+        types.CodeType: 'CodeType',
+        types.MethodType: 'MethodType'
+        }
 for k, v in types.__dict__.items():
     if type(v) is type:
         _BUILTIN_TYPE_NAMES[v] = k
