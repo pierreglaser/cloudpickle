@@ -43,7 +43,6 @@ except ImportError:
     tornado = None
 
 import cloudpickle
-from cloudpickle.cloudpickle import _is_dynamic
 from cloudpickle.cloudpickle import _make_empty_cell, cell_set
 
 from .testutils import subprocess_pickle_echo
@@ -416,86 +415,6 @@ class CloudPickleTest(unittest.TestCase):
         pickle_clone = pickle_depickle(pickle, protocol=self.protocol)
         self.assertEqual(pickle, pickle_clone)
 
-    def test_dynamic_module(self):
-        mod = types.ModuleType('mod')
-        code = '''
-        x = 1
-        def f(y):
-            return x + y
-
-        class Foo:
-            def method(self, x):
-                return f(x)
-        '''
-        exec(textwrap.dedent(code), mod.__dict__)
-        mod2 = pickle_depickle(mod, protocol=self.protocol)
-        self.assertEqual(mod.x, mod2.x)
-        self.assertEqual(mod.f(5), mod2.f(5))
-        self.assertEqual(mod.Foo().method(5), mod2.Foo().method(5))
-
-        if platform.python_implementation() != 'PyPy':
-            # XXX: this fails with excessive recursion on PyPy.
-            mod3 = subprocess_pickle_echo(mod, protocol=self.protocol)
-            self.assertEqual(mod.x, mod3.x)
-            self.assertEqual(mod.f(5), mod3.f(5))
-            self.assertEqual(mod.Foo().method(5), mod3.Foo().method(5))
-
-        # Test dynamic modules when imported back are singletons
-        mod1, mod2 = pickle_depickle([mod, mod])
-        self.assertEqual(id(mod1), id(mod2))
-
-    def test_dynamic_modules_globals(self):
-        # _dynamic_modules_globals is a WeakValueDictionary, so if a value
-        # in this dict (containing a set of global variables from a dynamic
-        # module created in the parent process) has no other reference than in
-        # this dict in the child process, it will be garbage collected.
-
-        # We first create a module
-        mod = types.ModuleType('mod')
-        code = '''
-        x = 1
-        def func():
-            return
-        '''
-        exec(textwrap.dedent(code), mod.__dict__)
-
-        pickled_module_path = 'mod_f.pkl'
-
-        child_process_script = '''
-        import pickle
-        from cloudpickle.cloudpickle import _dynamic_modules_globals
-        import gc
-        with open("{pickled_module_path}", 'rb') as f:
-            func = pickle.load(f)
-
-        # A dictionnary storing the globals of the newly unpickled function
-        # should have been created
-        assert list(_dynamic_modules_globals.keys()) == ['mod']
-
-        # func.__globals__ is the only non-weak reference to
-        # _dynamic_modules_globals['mod']. By deleting func, we delete also
-        # _dynamic_modules_globals['mod']
-        del func
-        gc.collect()
-
-        # There is no reference to the globals of func since func has been
-        # deleted and _dynamic_modules_globals is a WeakValueDictionary,
-        # so _dynamic_modules_globals should now be empty
-        assert list(_dynamic_modules_globals.keys()) == []
-        '''
-
-        child_process_script = child_process_script.format(
-                pickled_module_path=pickled_module_path)
-
-        try:
-            with open(pickled_module_path, 'wb') as f:
-                cloudpickle.dump(mod.func, f)
-
-            assert_run_python_script(textwrap.dedent(child_process_script))
-
-        finally:
-            os.unlink(pickled_module_path)
-
     def test_module_locals_behavior(self):
         # Makes sure that a local function defined in another module is
         # correctly serialized. This notably checks that the globals are
@@ -528,74 +447,6 @@ class CloudPickleTest(unittest.TestCase):
         finally:
             os.unlink(pickled_func_path)
 
-    def test_load_dynamic_module_in_grandchild_process(self):
-        # Make sure that when loaded, a dynamic module preserves its dynamic
-        # property. Otherwise, this will lead to an ImportError if pickled in
-        # the child process and reloaded in another one.
-
-        # We create a new dynamic module
-        mod = types.ModuleType('mod')
-        code = '''
-        x = 1
-        '''
-        exec(textwrap.dedent(code), mod.__dict__)
-
-        # This script will be ran in a separate child process. It will import
-        # the pickled dynamic module, and then re-pickle it under a new name.
-        # Finally, it will create a child process that will load the re-pickled
-        # dynamic module.
-        parent_process_module_file = 'dynamic_module_from_parent_process.pkl'
-        child_process_module_file = 'dynamic_module_from_child_process.pkl'
-        child_process_script = '''
-            import pickle
-            import textwrap
-
-            import cloudpickle
-            from testutils import assert_run_python_script
-
-
-            child_of_child_process_script = {child_of_child_process_script}
-
-            with open('{parent_process_module_file}', 'rb') as f:
-                mod = pickle.load(f)
-
-            with open('{child_process_module_file}', 'wb') as f:
-                cloudpickle.dump(mod, f)
-
-            assert_run_python_script(textwrap.dedent(child_of_child_process_script))
-            '''
-
-        # The script ran by the process created by the child process
-        child_of_child_process_script = """ '''
-                import pickle
-                with open('{child_process_module_file}','rb') as fid:
-                    mod = pickle.load(fid)
-                ''' """
-
-        # Filling the two scripts with the pickled modules filepaths and,
-        # for the first child process, the script to be executed by its
-        # own child process.
-        child_of_child_process_script = child_of_child_process_script.format(
-                child_process_module_file=child_process_module_file)
-
-        child_process_script = child_process_script.format(
-                parent_process_module_file=parent_process_module_file,
-                child_process_module_file=child_process_module_file,
-                child_of_child_process_script=child_of_child_process_script)
-
-        try:
-            with open(parent_process_module_file, 'wb') as fid:
-                cloudpickle.dump(mod, fid)
-
-            assert_run_python_script(textwrap.dedent(child_process_script))
-
-        finally:
-            # Remove temporary created files
-            if os.path.exists(parent_process_module_file):
-                os.unlink(parent_process_module_file)
-            if os.path.exists(child_process_module_file):
-                os.unlink(child_process_module_file)
-
     def test_correct_globals_import(self):
         def nested_function(x):
             return x + 1
@@ -620,26 +471,6 @@ class CloudPickleTest(unittest.TestCase):
         assert b'unwanted_function' not in b
         assert b'math' not in b
 
-    def test_is_dynamic_module(self):
-        import pickle  # decouple this test from global imports
-        import os.path
-        import distutils
-        import distutils.ccompiler
-
-        assert not _is_dynamic(pickle)
-        assert not _is_dynamic(os.path)  # fake (aliased) module
-        assert not _is_dynamic(distutils)  # package
-        assert not _is_dynamic(distutils.ccompiler)  # module in package
-
-        # user-created module without using the import machinery are also
-        # dynamic
-        dynamic_module = types.ModuleType('dynamic_module')
-        assert _is_dynamic(dynamic_module)
-
-    def test_Ellipsis(self):
-        self.assertEqual(Ellipsis,
-                         pickle_depickle(Ellipsis, protocol=self.protocol))
-
     def test_NotImplemented(self):
         ExcClone = pickle_depickle(NotImplemented, protocol=self.protocol)
         self.assertEqual(NotImplemented, ExcClone)
@@ -647,10 +478,6 @@ class CloudPickleTest(unittest.TestCase):
     def test_NoneType(self):
         res = pickle_depickle(type(None), protocol=self.protocol)
         self.assertEqual(type(None), res)
-
-    def test_EllipsisType(self):
-        res = pickle_depickle(type(Ellipsis), protocol=self.protocol)
-        self.assertEqual(type(Ellipsis), res)
 
     def test_NotImplementedType(self):
         res = pickle_depickle(type(NotImplemented), protocol=self.protocol)
@@ -1096,114 +923,6 @@ class CloudPickleTest(unittest.TestCase):
             assert result_pickled_f1 == "changed_by_f0", result_pickled_f1
         finally:
             _TEST_GLOBAL_VARIABLE = orig_value
-
-    def test_function_from_dynamic_module_with_globals_modifications(self):
-        # This test verifies that the global variable state of a function
-        # defined in a dynamic module in a child process are not reset by
-        # subsequent uplickling.
-
-        # first, we create a dynamic module in the parent process
-        mod = types.ModuleType('mod')
-        code = '''
-        GLOBAL_STATE = "initial value"
-
-        def func_defined_in_dynamic_module(v=None):
-            global GLOBAL_STATE
-            if v is not None:
-                GLOBAL_STATE = v
-            return GLOBAL_STATE
-        '''
-        exec(textwrap.dedent(code), mod.__dict__)
-
-        try:
-            # Simple sanity check on the function's output
-            assert mod.func_defined_in_dynamic_module() == "initial value"
-
-            # The function of mod is pickled two times, with two different
-            # values for the global variable GLOBAL_STATE.
-            # Then we launch a child process that sequentially unpickles the
-            # two functions. Those unpickle functions should share the same
-            # global variables in the child process:
-            # Once the first function gets unpickled, mod is created and
-            # tracked in the child environment. This is state is preserved
-            # when unpickling the second function whatever the global variable
-            # GLOBAL_STATE's value at the time of pickling.
-
-            with open('function_with_initial_globals.pkl', 'wb') as f:
-                cloudpickle.dump(mod.func_defined_in_dynamic_module, f)
-
-            # Change the mod's global variable
-            mod.GLOBAL_STATE = 'changed value'
-
-            # At this point, mod.func_defined_in_dynamic_module()
-            # returns the updated value. Let's pickle it again.
-            assert mod.func_defined_in_dynamic_module() == 'changed value'
-            with open('function_with_modified_globals.pkl', 'wb') as f:
-                cloudpickle.dump(mod.func_defined_in_dynamic_module, f)
-
-            child_process_code = """
-                import pickle
-
-                with open('function_with_initial_globals.pkl','rb') as f:
-                    func_with_initial_globals = pickle.load(f)
-
-                # At this point, a module called 'mod' should exist in
-                # _dynamic_modules_globals. Further function loading
-                # will use the globals living in mod.
-
-                assert func_with_initial_globals() == 'initial value'
-
-                # Load a function with initial global variable that was
-                # pickled after a change in the global variable
-                with open('function_with_modified_globals.pkl','rb') as f:
-                    func_with_modified_globals = pickle.load(f)
-
-                # assert the this unpickling did not modify the value of
-                # the local
-                assert func_with_modified_globals() == 'initial value'
-
-                # Update the value from the child process and check that
-                # unpickling again does not reset our change.
-                assert func_with_initial_globals('new value') == 'new value'
-                assert func_with_modified_globals() == 'new value'
-
-                with open('function_with_initial_globals.pkl','rb') as f:
-                    func_with_initial_globals = pickle.load(f)
-                assert func_with_initial_globals() == 'new value'
-                assert func_with_modified_globals() == 'new value'
-            """
-            assert_run_python_script(textwrap.dedent(child_process_code))
-
-        finally:
-            os.unlink('function_with_initial_globals.pkl')
-            os.unlink('function_with_modified_globals.pkl')
-
-    @pytest.mark.skipif(sys.version_info >= (3, 0),
-                        reason="hardcoded pickle bytes for 2.7")
-    def test_function_pickle_compat_0_4_0(self):
-        # The result of `cloudpickle.dumps(lambda x: x)` in cloudpickle 0.4.0,
-        # Python 2.7
-        pickled = (b'\x80\x02ccloudpickle.cloudpickle\n_fill_function\nq\x00(c'
-            b'cloudpickle.cloudpickle\n_make_skel_func\nq\x01ccloudpickle.clou'
-            b'dpickle\n_builtin_type\nq\x02U\x08CodeTypeq\x03\x85q\x04Rq\x05(K'
-            b'\x01K\x01K\x01KCU\x04|\x00\x00Sq\x06N\x85q\x07)U\x01xq\x08\x85q'
-            b'\tU\x07<stdin>q\nU\x08<lambda>q\x0bK\x01U\x00q\x0c))tq\rRq\x0eJ'
-            b'\xff\xff\xff\xff}q\x0f\x87q\x10Rq\x11}q\x12N}q\x13NtR.')
-        self.assertEqual(42, cloudpickle.loads(pickled)(42))
-
-    @pytest.mark.skipif(sys.version_info >= (3, 0),
-                        reason="hardcoded pickle bytes for 2.7")
-    def test_function_pickle_compat_0_4_1(self):
-        # The result of `cloudpickle.dumps(lambda x: x)` in cloudpickle 0.4.1,
-        # Python 2.7
-        pickled = (b'\x80\x02ccloudpickle.cloudpickle\n_fill_function\nq\x00(c'
-            b'cloudpickle.cloudpickle\n_make_skel_func\nq\x01ccloudpickle.clou'
-            b'dpickle\n_builtin_type\nq\x02U\x08CodeTypeq\x03\x85q\x04Rq\x05(K'
-            b'\x01K\x01K\x01KCU\x04|\x00\x00Sq\x06N\x85q\x07)U\x01xq\x08\x85q'
-            b'\tU\x07<stdin>q\nU\x08<lambda>q\x0bK\x01U\x00q\x0c))tq\rRq\x0eJ'
-            b'\xff\xff\xff\xff}q\x0f\x87q\x10Rq\x11}q\x12N}q\x13U\x08__main__q'
-            b'\x14NtR.')
-        self.assertEqual(42, cloudpickle.loads(pickled)(42))
 
     def test_pickle_reraise(self):
         for exc_type in [Exception, ValueError, TypeError, RuntimeError]:
