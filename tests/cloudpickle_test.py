@@ -665,30 +665,6 @@ class CloudPickleTest(unittest.TestCase):
         fi_depickled = pickle_depickle(fi, protocol=self.protocol)
         self.assertEqual(list(fi_depickled([[1, 2], [3, 4]])), [1, 2, 3, 4])
 
-    @pytest.mark.skipif(tornado is None,
-                        reason="test needs Tornado installed")
-    def test_tornado_coroutine(self):
-        # Pickling a locally defined coroutine function
-        from tornado import gen, ioloop
-
-        @gen.coroutine
-        def f(x, y):
-            yield gen.sleep(x)
-            raise gen.Return(y + 1)
-
-        @gen.coroutine
-        def g(y):
-            res = yield f(0.01, y)
-            raise gen.Return(res + 1)
-
-        data = cloudpickle.dumps([g, g])
-        f = g = None
-        g2, g3 = pickle.loads(data)
-        self.assertTrue(g2 is g3)
-        loop = ioloop.IOLoop.current()
-        res = loop.run_sync(functools.partial(g2, 5))
-        self.assertEqual(res, 7)
-
     def test_extended_arg(self):
         # Functions with more than 65535 global vars prefix some global
         # variable references with the EXTENDED_ARG opcode.
