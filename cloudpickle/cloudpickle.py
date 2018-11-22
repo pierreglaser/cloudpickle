@@ -69,72 +69,6 @@ DEFAULT_PROTOCOL = pickle.HIGHEST_PROTOCOL
 types.ClassType = type
 
 
-def _make_cell_set_template_code():
-    """Get the Python compiler to emit LOAD_FAST(arg); STORE_DEREF
-
-    Notes
-    -----
-    In Python 3, we could use an easier function:
-
-    .. code-block:: python
-
-       def f():
-           cell = None
-
-           def _stub(value):
-               nonlocal cell
-               cell = value
-
-           return _stub
-
-        _cell_set_template_code = f()
-
-    This function is _only_ a LOAD_FAST(arg); STORE_DEREF, but that is
-    invalid syntax on Python 2. If we use this function we also don't need
-    to do the weird freevars/cellvars swap below
-    """
-    def inner(value):
-        lambda: cell  # make ``cell`` a closure so that we get a STORE_DEREF
-        cell = value
-
-    co = inner.__code__
-
-    # NOTE: we are marking the cell variable as a free variable intentionally
-    # so that we simulate an inner function instead of the outer function. This
-    # is what gives us the ``nonlocal`` behavior in a Python 2 compatible way.
-    return types.CodeType(
-        co.co_argcount,
-        co.co_kwonlyargcount,
-        co.co_nlocals,
-        co.co_stacksize,
-        co.co_flags,
-        co.co_code,
-        co.co_consts,
-        co.co_names,
-        co.co_varnames,
-        co.co_filename,
-        co.co_name,
-        co.co_firstlineno,
-        co.co_lnotab,
-        co.co_cellvars,  # this is the trickery
-        (),
-    )
-
-
-_cell_set_template_code = _make_cell_set_template_code()
-
-
-def cell_set(cell, value):
-    """Set the value of a closure cell.
-    """
-    return types.FunctionType(
-        _cell_set_template_code,
-        {},
-        '_cell_set_inner',
-        (),
-        (cell,),
-    )(value)
-
 
 # relevant opcodes
 STORE_GLOBAL = opcode.opmap['STORE_GLOBAL']
@@ -449,6 +383,8 @@ class CloudPickler(Pickler):
         write = self.write
 
         code, f_globals, defaults, closure_values, dct, base_globals = self.extract_func_data(func)
+        if closure_values is not None:
+            raise NotImplementedError
 
         save(_fill_function)  # skeleton function updater
         write(pickle.MARK)    # beginning of tuple that _fill_function expects
@@ -905,22 +841,10 @@ def _fill_function(*args):
     if 'qualname' in state:
         func.__qualname__ = state['qualname']
 
-    cells = func.__closure__
-    if cells is not None:
-        for cell, value in zip(cells, state['closure_values']):
-            if value is not _empty_cell_value:
-                cell_set(cell, value)
+    if func.__closure__ is not None:
+        raise NotImplementedError
 
     return func
-
-
-def _make_empty_cell():
-    if False:
-        # trick the compiler into creating an empty cell in our lambda
-        cell = None
-        raise AssertionError('this route should not be executed')
-
-    return (lambda: cell).__closure__[0]
 
 
 def _make_skel_func(code, cell_count, base_globals=None):
@@ -941,12 +865,7 @@ def _make_skel_func(code, cell_count, base_globals=None):
 
     base_globals['__builtins__'] = __builtins__
 
-    closure = (
-        tuple(_make_empty_cell() for _ in range(cell_count))
-        if cell_count >= 0 else
-        None
-    )
-    return types.FunctionType(code, base_globals, None, None, closure)
+    return types.FunctionType(code, base_globals, None, None, None)
 
 
 def _rehydrate_skeleton_class(skeleton_class, class_dict):
