@@ -43,7 +43,6 @@ except ImportError:
     tornado = None
 
 import cloudpickle
-from cloudpickle.cloudpickle import _make_empty_cell, cell_set
 
 from .testutils import subprocess_pickle_echo
 from .testutils import assert_run_python_script
@@ -173,23 +172,6 @@ class CloudPickleTest(unittest.TestCase):
         f2 = lambda x: f1(x) // b
         self.assertEqual(pickle_depickle(f2, protocol=self.protocol)(1), 1)
 
-    def test_recursive_closure(self):
-        def f1():
-            def g():
-                return g
-            return g
-
-        def f2(base):
-            def g(n):
-                return base if n <= 1 else n * g(n - 1)
-            return g
-
-        g1 = pickle_depickle(f1())
-        self.assertEqual(g1(), g1)
-
-        g2 = pickle_depickle(f2(2))
-        self.assertEqual(g2(5), 240)
-
     def test_closure_none_is_preserved(self):
         def f():
             """a function with no closure cells
@@ -206,36 +188,6 @@ class CloudPickleTest(unittest.TestCase):
             g.__closure__ is None,
             msg='g now has closure cells even though f does not',
         )
-
-    def test_empty_cell_preserved(self):
-        def f():
-            if False:  # pragma: no cover
-                cell = None
-
-            def g():
-                cell  # NameError, unbound free variable
-
-            return g
-
-        g1 = f()
-        with pytest.raises(NameError):
-            g1()
-
-        g2 = pickle_depickle(g1, protocol=self.protocol)
-        with pytest.raises(NameError):
-            g2()
-
-    def test_unhashable_closure(self):
-        def f():
-            s = {1, 2}  # mutable set is unhashable
-
-            def g():
-                return len(s)
-
-            return g
-
-        g = pickle_depickle(f())
-        self.assertEqual(g(), 2)
 
     def test_dynamically_generated_class_that_uses_super(self):
 
@@ -281,55 +233,6 @@ class CloudPickleTest(unittest.TestCase):
         self.assertEqual(depickled_C.C_again().it_works(), "woohoo!")
         self.assertEqual(depickled_C.instance_of_C.it_works(), "woohoo!")
         self.assertEqual(depickled_instance.it_works(), "woohoo!")
-
-    @pytest.mark.skipif(sys.version_info >= (3, 4)
-                        and sys.version_info < (3, 4, 3),
-                        reason="subprocess has a bug in 3.4.0 to 3.4.2")
-    def test_locally_defined_function_and_class(self):
-        LOCAL_CONSTANT = 42
-
-        def some_function(x, y):
-            # Make sure the __builtins__ are not broken (see #211)
-            sum(range(10))
-            return (x + y) / LOCAL_CONSTANT
-
-        # pickle the function definition
-        self.assertEqual(pickle_depickle(some_function, protocol=self.protocol)(41, 1), 1)
-        self.assertEqual(pickle_depickle(some_function, protocol=self.protocol)(81, 3), 2)
-
-        hidden_constant = lambda: LOCAL_CONSTANT
-
-        class SomeClass(object):
-            """Overly complicated class with nested references to symbols"""
-            def __init__(self, value):
-                self.value = value
-
-            def one(self):
-                return LOCAL_CONSTANT / hidden_constant()
-
-            def some_method(self, x):
-                return self.one() + some_function(x, 1) + self.value
-
-        # pickle the class definition
-        clone_class = pickle_depickle(SomeClass, protocol=self.protocol)
-        self.assertEqual(clone_class(1).one(), 1)
-        self.assertEqual(clone_class(5).some_method(41), 7)
-        clone_class = subprocess_pickle_echo(SomeClass, protocol=self.protocol)
-        self.assertEqual(clone_class(5).some_method(41), 7)
-
-        # pickle the class instances
-        self.assertEqual(pickle_depickle(SomeClass(1)).one(), 1)
-        self.assertEqual(pickle_depickle(SomeClass(5)).some_method(41), 7)
-        new_instance = subprocess_pickle_echo(SomeClass(5),
-                                              protocol=self.protocol)
-        self.assertEqual(new_instance.some_method(41), 7)
-
-        # pickle the method instances
-        self.assertEqual(pickle_depickle(SomeClass(1).one)(), 1)
-        self.assertEqual(pickle_depickle(SomeClass(5).some_method)(41), 7)
-        new_method = subprocess_pickle_echo(SomeClass(5).some_method,
-                                            protocol=self.protocol)
-        self.assertEqual(new_method(41), 7)
 
     def test_partial(self):
         partial_obj = functools.partial(min, 1)
@@ -542,25 +445,6 @@ class CloudPickleTest(unittest.TestCase):
         f = pickle.loads(s)
         f() # perform test for error
 
-    def test_submodule_closure(self):
-        # Same as test_submodule except the package is not a global
-        def scope():
-            import xml.etree.ElementTree
-            def example():
-                x = xml.etree.ElementTree.Comment # potential AttributeError
-            return example
-        example = scope()
-
-        s = cloudpickle.dumps(example)
-
-        # refresh the environment (unimport dependency)
-        for item in list(sys.modules):
-            if item.split('.')[0] == 'xml':
-                del sys.modules[item]
-
-        f = cloudpickle.loads(s)
-        f() # test
-
     def test_multiprocess(self):
         # running a function pickled by another process (a la dask.distributed)
         def scope():
@@ -603,19 +487,6 @@ class CloudPickleTest(unittest.TestCase):
                    base64.b32encode(s).decode('ascii') +
                    "'))()")
         assert not subprocess.call([sys.executable, '-c', command])
-
-    def test_cell_manipulation(self):
-        cell = _make_empty_cell()
-
-        with pytest.raises(ValueError):
-            cell.cell_contents
-
-        ob = object()
-        cell_set(cell, ob)
-        self.assertTrue(
-            cell.cell_contents is ob,
-            msg='cell contents not set correctly',
-        )
 
     def check_logger(self, name):
         logger = logging.getLogger(name)
