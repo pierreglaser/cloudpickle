@@ -198,6 +198,10 @@ class CloudPickleTest(unittest.TestCase):
 
     def test_dynamically_generated_class_that_uses_super(self):
 
+        script = '''
+        from tests.cloudpickle_test import pickle_depickle
+
+
         class Base(object):
             def method(self):
                 return 1
@@ -207,20 +211,23 @@ class CloudPickleTest(unittest.TestCase):
             def method(self):
                 return super(Derived, self).method() + 1
 
-        self.assertEqual(Derived().method(), 2)
+        assert Derived().method() == 2
 
         # Pickle and unpickle the class.
-        UnpickledDerived = pickle_depickle(Derived, protocol=self.protocol)
-        self.assertEqual(UnpickledDerived().method(), 2)
+        UnpickledDerived = pickle_depickle(Derived, protocol={protocol})
+        assert UnpickledDerived().method() == 2
 
         # We have special logic for handling __doc__ because it's a readonly
         # attribute on PyPy.
-        self.assertEqual(UnpickledDerived.__doc__, "Derived Docstring")
+        assert UnpickledDerived.__doc__ == "Derived Docstring"
 
         # Pickle and unpickle an instance.
         orig_d = Derived()
-        d = pickle_depickle(orig_d, protocol=self.protocol)
-        self.assertEqual(d.method(), 2)
+        d = pickle_depickle(orig_d, protocol={protocol})
+        assert d.method() == 2
+        '''.format(protocol=self.protocol)
+        assert_run_python_script(textwrap.dedent(script))
+
 
     def test_cycle_in_classdict_globals(self):
 
