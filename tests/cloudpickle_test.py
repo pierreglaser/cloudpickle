@@ -36,12 +36,6 @@ except ImportError:
     np = None
     spp = None
 
-try:
-    # Ditto for Tornado
-    import tornado
-except ImportError:
-    tornado = None
-
 import cloudpickle
 
 from .testutils import subprocess_pickle_echo
