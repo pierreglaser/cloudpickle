@@ -164,8 +164,14 @@ class CloudPickleTest(unittest.TestCase):
         assert_run_python_script(textwrap.dedent(script))
 
     def test_method_descriptors(self):
-        f = pickle_depickle(str.upper)
-        self.assertEqual(f('abc'), 'ABC')
+        script = '''
+        from tests.cloudpickle_test import pickle_depickle
+
+
+        f = pickle_depickle(str.upper, protocol={protocol})
+        assert f('abc') == 'ABC'
+        '''.format(protocol=self.protocol)
+        assert_run_python_script(textwrap.dedent(script))
 
     def test_instancemethods_without_self(self):
         class F(object):

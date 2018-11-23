@@ -389,3 +389,10 @@ test_large_memoryview
     keep: yes. execute this test in the main and not in a local scope.
     status: REMOVED
     commit last touched:
+
+########################################################################################
+#                      TEST MODIFIED TO BE RUN IN __MAIN__ MODULE                      #
+########################################################################################
+test_generator
+test_partial
+test_method_descriptors
