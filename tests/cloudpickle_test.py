@@ -317,17 +317,10 @@ class CloudPickleTest(unittest.TestCase):
         '''
         assert_run_python_script(textwrap.dedent(script))
 
-    def test_NotImplemented(self):
-        ExcClone = pickle_depickle(NotImplemented, protocol=self.protocol)
-        self.assertEqual(NotImplemented, ExcClone)
-
     def test_NoneType(self):
         res = pickle_depickle(type(None), protocol=self.protocol)
         self.assertEqual(type(None), res)
 
-    def test_NotImplementedType(self):
-        res = pickle_depickle(type(NotImplemented), protocol=self.protocol)
-        self.assertEqual(type(NotImplemented), res)
 
     def test_extended_arg(self):
         # Functions with more than 65535 global vars prefix some global

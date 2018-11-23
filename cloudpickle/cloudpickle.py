@@ -469,11 +469,6 @@ class CloudPickler(Pickler):
     if type(operator.attrgetter) is type:
         dispatch[operator.attrgetter] = save_attrgetter
 
-    def save_not_implemented(self, obj):
-        self.save_reduce(_gen_not_implemented, ())
-
-    dispatch[type(NotImplemented)] = save_not_implemented
-
     def save_weakset(self, obj):
         self.save_reduce(weakref.WeakSet, (list(obj),))
 
@@ -544,11 +539,6 @@ def _genpartial(func, args, kwds):
     if not kwds:
         kwds = {}
     return partial(func, *args, **kwds)
-
-
-
-def _gen_not_implemented():
-    return NotImplemented
 
 
 def instance(cls):

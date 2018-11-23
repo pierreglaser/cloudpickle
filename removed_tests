@@ -194,6 +194,20 @@ test_ufunc
     status: REMOVED
     commit last touched:
 
+test_NotImplemented
+    goal: pickle NotImplemented
+    fails because: dropped support
+    keep: not for now (additional feature)
+    status: REMOVED
+    commit last touched:
+
+test_NotImplementedType:
+    goal: pickle NotImplementedType
+    fails because: dropped support
+    keep: not for now (additional feature)
+    status: REMOVED
+    commit last touched:
+
 
 ########################################################################################
 #                                    RETRO-COMPATIBILITY TESTS                         #
