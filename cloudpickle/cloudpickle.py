@@ -118,7 +118,6 @@ class CloudPickler(Pickler):
         self.globals_ref = {}
 
     def dump(self, obj):
-        self.inject_addons()
         try:
             return Pickler.dump(self, obj)
         except RuntimeError as e:
@@ -489,11 +488,6 @@ class CloudPickler(Pickler):
         self.save_reduce(logging.getLogger, (), obj=obj)
 
     dispatch[logging.RootLogger] = save_root_logger
-
-    """Special functions for Add-on libraries"""
-    def inject_addons(self):
-        """Plug in system. Register additional pickling functions if modules already loaded"""
-        pass
 
 
 # Shorthands for legacy support
