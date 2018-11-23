@@ -256,6 +256,14 @@ test_buffer:
     status: REMOVED
     commit last touched:
 
+
+test_logger:
+    goal: pickle a logger instance
+    fails because: dropped logger pickling functionality
+    keep: no
+    status: REMOVED
+    commit last touched:
+
 ########################################################################################
 #                                    RETRO-COMPATIBILITY TESTS                         #
 ########################################################################################

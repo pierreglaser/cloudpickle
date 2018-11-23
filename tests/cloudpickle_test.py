@@ -354,34 +354,6 @@ class CloudPickleTest(unittest.TestCase):
         finally:
             os.unlink(func_filename)
 
-    def check_logger(self, name):
-        logger = logging.getLogger(name)
-        pickled = pickle_depickle(logger, protocol=self.protocol)
-        self.assertTrue(pickled is logger, (pickled, logger))
-
-        dumped = cloudpickle.dumps(logger)
-
-        code = """if 1:
-            import cloudpickle, logging
-
-            logging.basicConfig(level=logging.INFO)
-            logger = cloudpickle.loads(%(dumped)r)
-            logger.info('hello')
-            """ % locals()
-        proc = subprocess.Popen([sys.executable, "-c", code],
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.STDOUT)
-        out, _ = proc.communicate()
-        self.assertEqual(proc.wait(), 0)
-        self.assertEqual(out.strip().decode(),
-                         'INFO:{}:hello'.format(logger.name))
-
-    def test_logger(self):
-        # logging.RootLogger object
-        self.check_logger(None)
-        # logging.Logger object
-        self.check_logger('cloudpickle.dummy_test_logger')
-
     def test_function_module_name(self):
         func = lambda x: x
         cloned = pickle_depickle(func, protocol=self.protocol)
