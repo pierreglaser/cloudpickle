@@ -380,9 +380,6 @@ class CloudPickler(Pickler):
         elif obj is type(NotImplemented):
             return self.save_reduce(type, (NotImplemented,), obj=obj)
 
-        if obj.__module__ == "__main__":
-            return self.save_dynamic_class(obj)
-
         try:
             return Pickler.save_global(self, obj, name=name)
         except Exception:
@@ -390,10 +387,6 @@ class CloudPickler(Pickler):
                 if obj in _BUILTIN_TYPE_NAMES:
                     return self.save_reduce(
                         _builtin_type, (_BUILTIN_TYPE_NAMES[obj],), obj=obj)
-
-            typ = type(obj)
-            if typ is not obj and isinstance(obj, (type, types.ClassType)):
-                return self.save_dynamic_class(obj)
 
             raise
 
