@@ -89,23 +89,6 @@ class CloudPickleTest(unittest.TestCase):
 
         assert_run_python_script(textwrap.dedent(script))
 
-    def test_closure_none_is_preserved(self):
-        def f():
-            """a function with no closure cells
-            """
-
-        self.assertTrue(
-            f.__closure__ is None,
-            msg='f actually has closure cells!',
-        )
-
-        g = pickle_depickle(f, protocol=self.protocol)
-
-        self.assertTrue(
-            g.__closure__ is None,
-            msg='g now has closure cells even though f does not',
-        )
-
     def test_dynamically_generated_class_that_uses_super(self):
 
         script = '''
