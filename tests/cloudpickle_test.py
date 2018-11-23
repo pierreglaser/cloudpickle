@@ -522,18 +522,27 @@ class CloudPickleTest(unittest.TestCase):
         self.assertEqual(depickled_method('b'), None)
 
     def test_itertools_count(self):
+        script = '''
+        import itertools
+        from functools import wraps
+
+        from tests.cloudpickle_test import pickle_depickle
+
+
         counter = itertools.count(1, step=2)
 
         # advance the counter a bit
         next(counter)
         next(counter)
 
-        new_counter = pickle_depickle(counter, protocol=self.protocol)
+        new_counter = pickle_depickle(counter, protocol={protocol})
 
-        self.assertTrue(counter is not new_counter)
+        assert counter is not new_counter
 
         for _ in range(10):
-            self.assertEqual(next(counter), next(new_counter))
+            assert next(counter) == next(new_counter)
+        '''.format(protocol=self.protocol)
+        assert_run_python_script(textwrap.dedent(script))
 
     def test_wraps_preserves_function_name(self):
         script = '''
