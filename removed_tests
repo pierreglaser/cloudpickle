@@ -105,6 +105,14 @@ test_weakset_identity_preservation
     status: BROKEN
     commit last touched:
 
+test_classmethod:
+    goal: pickle methods decorated with static/classmethod
+    fails because: temporarily dropping dynamic class pickling, because it
+        occasionally involves non-empty closures
+    keep: yes, but not right now, we limit ourselves to the most basic cases
+    status: REMOVED
+    commit last touched:
+
 
 ########################################################################################
 #                        TEST WITH DYNAMIC MODULES                                     #

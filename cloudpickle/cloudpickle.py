@@ -409,29 +409,6 @@ class CloudPickler(Pickler):
             raise
 
     dispatch[type] = save_global
-    dispatch[types.ClassType] = save_global
-
-    def save_instancemethod(self, obj):
-        # Memoization rarely is ever useful due to python bounding
-        if obj.__self__ is None:
-            self.save_reduce(getattr, (obj.im_class, obj.__name__))
-        else:
-            self.save_reduce(types.MethodType, (obj.__func__, obj.__self__), obj=obj)
-
-    dispatch[types.MethodType] = save_instancemethod
-
-    def save_property(self, obj):
-        # properties not correctly saved in python
-        self.save_reduce(property, (obj.fget, obj.fset, obj.fdel, obj.__doc__), obj=obj)
-
-    dispatch[property] = save_property
-
-    def save_classmethod(self, obj):
-        orig_func = obj.__func__
-        self.save_reduce(type(obj), (orig_func,), obj=obj)
-
-    dispatch[classmethod] = save_classmethod
-    dispatch[staticmethod] = save_classmethod
 
     def save_itemgetter(self, obj):
         """itemgetter serializer (needed for namedtuple support)"""
