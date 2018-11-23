@@ -463,29 +463,6 @@ class CloudPickleTest(unittest.TestCase):
         # logging.Logger object
         self.check_logger('cloudpickle.dummy_test_logger')
 
-    def test_weakset_identity_preservation(self):
-        # Test that weaksets don't lose all their inhabitants if they're
-        # pickled in a larger data structure that includes other references to
-        # their inhabitants.
-
-        class SomeClass(object):
-            def __init__(self, x):
-                self.x = x
-
-        obj1, obj2, obj3 = SomeClass(1), SomeClass(2), SomeClass(3)
-
-        things = [weakref.WeakSet([obj1, obj2]), obj1, obj2, obj3]
-        result = pickle_depickle(things, protocol=self.protocol)
-
-        weakset, depickled1, depickled2, depickled3 = result
-
-        self.assertEqual(depickled1.x, 1)
-        self.assertEqual(depickled2.x, 2)
-        self.assertEqual(depickled3.x, 3)
-        self.assertEqual(len(weakset), 2)
-
-        self.assertEqual(set(weakset), {depickled1, depickled2})
-
     def test_function_module_name(self):
         func = lambda x: x
         cloned = pickle_depickle(func, protocol=self.protocol)

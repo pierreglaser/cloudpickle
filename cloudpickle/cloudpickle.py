@@ -423,11 +423,6 @@ class CloudPickler(Pickler):
     if type(operator.itemgetter) is type:
         dispatch[operator.itemgetter] = save_itemgetter
 
-    def save_weakset(self, obj):
-        self.save_reduce(weakref.WeakSet, (list(obj),))
-
-    dispatch[weakref.WeakSet] = save_weakset
-
 
 # Shorthands for legacy support
 
