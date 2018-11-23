@@ -128,11 +128,6 @@ class CloudPickler(Pickler):
             else:
                 raise
 
-    def save_memoryview(self, obj):
-        self.save(obj.tobytes())
-
-    dispatch[memoryview] = save_memoryview
-
     def save_module(self, obj):
         """
         Save a module as an import
