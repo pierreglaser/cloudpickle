@@ -219,8 +219,14 @@ class CloudPickleTest(unittest.TestCase):
         assert_run_python_script(textwrap.dedent(script))
 
     def test_NoneType(self):
-        res = pickle_depickle(type(None), protocol=self.protocol)
-        self.assertEqual(type(None), res)
+        script = '''
+        from tests.cloudpickle_test import pickle_depickle
+
+
+        res = pickle_depickle(type(None), protocol={protocol})
+        assert type(None) == res
+        '''.format(protocol=self.protocol)
+        assert_run_python_script(textwrap.dedent(script))
 
 
     def test_extended_arg(self):
