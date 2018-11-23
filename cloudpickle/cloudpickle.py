@@ -541,9 +541,6 @@ class CloudPickler(Pickler):
     if type(operator.attrgetter) is type:
         dispatch[operator.attrgetter] = save_attrgetter
 
-    def save_ellipsis(self, obj):
-        self.save_reduce(_gen_ellipsis, ())
-
     def save_not_implemented(self, obj):
         self.save_reduce(_gen_not_implemented, ())
 
