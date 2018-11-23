@@ -482,10 +482,17 @@ class CloudPickleTest(unittest.TestCase):
                 cloudpickle.dumps(obj)
 
     def test_unhashable_function(self):
-        d = {'a': 1}
-        depickled_method = pickle_depickle(d.get)
-        self.assertEqual(depickled_method('a'), 1)
-        self.assertEqual(depickled_method('b'), None)
+        script = """
+        from tests.cloudpickle_test import pickle_depickle
+
+
+        d = {{"a": 1}}
+        depickled_method = pickle_depickle(d.get, protocol={protocol})
+        assert depickled_method('a') == 1
+        assert depickled_method('b') == None
+        """.format(protocol=self.protocol)
+        assert_run_python_script(textwrap.dedent(script))
+        pass
 
     def test_itertools_count(self):
         script = '''

@@ -432,3 +432,4 @@ test_generator
 test_partial
 test_method_descriptors
 test_itertools_count
+test_unhashable function
