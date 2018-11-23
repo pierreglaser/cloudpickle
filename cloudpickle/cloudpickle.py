@@ -532,15 +532,6 @@ def print_exec(stream):
     traceback.print_exception(ei[0], ei[1], ei[2], None, stream)
 
 
-# object generators:
-def _genpartial(func, args, kwds):
-    if not args:
-        args = ()
-    if not kwds:
-        kwds = {}
-    return partial(func, *args, **kwds)
-
-
 def instance(cls):
     """Create a new instance of a class.
 
