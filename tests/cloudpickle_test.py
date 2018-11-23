@@ -90,9 +90,34 @@ class CloudPickleTest(unittest.TestCase):
         assert_run_python_script(textwrap.dedent(script))
 
     def test_dynamically_generated_class_that_uses_super(self):
+        pickled_derived_class_path = 'pickled_class.pk'
+        pickled_derived_instance_path = 'pickled_instance.pk'
+
+        grandchild_process_script = """'''
+        import pickle
+
+        # unpickle the class.
+        with open("{pickled_derived_class_path}", 'rb') as f:
+            unpickled_class = pickle.load(f)
+
+        assert unpickled_class().method() == 2
+
+        # unpickle the instance.
+        with open("{pickled_derived_instance_path}", 'rb') as f:
+            unpickled_instance= pickle.load(f)
+
+        assert unpickled_instance.method() == 2
+
+        '''""".format(
+                pickled_derived_class_path=pickled_derived_class_path,
+                pickled_derived_instance_path=pickled_derived_instance_path)
 
         script = '''
+        import cloudpickle
+        import textwrap
+
         from tests.cloudpickle_test import pickle_depickle
+        from testutils import assert_run_python_script
 
 
         class Base(object):
@@ -107,19 +132,27 @@ class CloudPickleTest(unittest.TestCase):
         assert Derived().method() == 2
 
         # Pickle and unpickle the class.
-        UnpickledDerived = pickle_depickle(Derived, protocol={protocol})
-        assert UnpickledDerived().method() == 2
+        with open("{pickled_derived_class_path}", 'wb') as f:
+            cloudpickle.dump(Derived, f, protocol={protocol})
 
-        # We have special logic for handling __doc__ because it's a readonly
-        # attribute on PyPy.
-        assert UnpickledDerived.__doc__ == "Derived Docstring"
+        # Pickle and unpickle the instance.
+        with open("{pickled_derived_instance_path}", 'wb') as f:
+            cloudpickle.dump(Derived(), f, protocol={protocol})
 
-        # Pickle and unpickle an instance.
-        orig_d = Derived()
-        d = pickle_depickle(orig_d, protocol={protocol})
-        assert d.method() == 2
-        '''.format(protocol=self.protocol)
-        assert_run_python_script(textwrap.dedent(script))
+        assert_run_python_script(textwrap.dedent({grandchild_process_script}))
+        '''.format(
+                protocol=self.protocol,
+                pickled_derived_class_path=pickled_derived_class_path,
+                pickled_derived_instance_path=pickled_derived_instance_path,
+                grandchild_process_script=grandchild_process_script)
+
+        try:
+            assert_run_python_script(textwrap.dedent(script))
+        finally:
+
+            # os.unlink(pickled_derived_instance_path)
+            # os.unlink(pickled_derived_class_path)
+            pass
 
     def test_partial(self):
         script = '''
