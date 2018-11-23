@@ -1,23 +1,16 @@
 from __future__ import division
 
-import abc
-import collections
-import base64
 import functools
 from io import BytesIO
 import itertools
 import logging
-import math
 from operator import itemgetter, attrgetter
 import pickle
-import platform
 import random
 import subprocess
 import sys
 import textwrap
-import types
 import unittest
-import weakref
 import os
 
 try:
@@ -29,7 +22,6 @@ import pytest
 
 import cloudpickle
 
-from .testutils import subprocess_pickle_echo
 from .testutils import assert_run_python_script
 
 

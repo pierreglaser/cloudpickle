@@ -42,20 +42,16 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 from __future__ import print_function
 
-import io
 import dis
 import sys
 import types
 import opcode
 import pickle
 import struct
-import logging
 import weakref
-import operator
 import importlib
 import itertools
 import traceback
-from functools import partial
 
 from pickle import _Pickler as Pickler
 from io import BytesIO as StringIO
