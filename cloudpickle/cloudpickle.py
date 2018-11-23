@@ -446,29 +446,6 @@ class CloudPickler(Pickler):
     if type(operator.itemgetter) is type:
         dispatch[operator.itemgetter] = save_itemgetter
 
-    def save_attrgetter(self, obj):
-        """attrgetter serializer"""
-        class Dummy(object):
-            def __init__(self, attrs, index=None):
-                self.attrs = attrs
-                self.index = index
-
-            def __getattribute__(self, item):
-                attrs = object.__getattribute__(self, "attrs")
-                index = object.__getattribute__(self, "index")
-                if index is None:
-                    index = len(attrs)
-                    attrs.append(item)
-                else:
-                    attrs[index] = ".".join([attrs[index], item])
-                return type(self)(attrs, index)
-        attrs = []
-        obj(Dummy(attrs))
-        return self.save_reduce(operator.attrgetter, tuple(attrs))
-
-    if type(operator.attrgetter) is type:
-        dispatch[operator.attrgetter] = save_attrgetter
-
     def save_weakset(self, obj):
         self.save_reduce(weakref.WeakSet, (list(obj),))
 
