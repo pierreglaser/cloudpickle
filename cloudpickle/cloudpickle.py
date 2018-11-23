@@ -532,22 +532,6 @@ def print_exec(stream):
     traceback.print_exception(ei[0], ei[1], ei[2], None, stream)
 
 
-def instance(cls):
-    """Create a new instance of a class.
-
-    Parameters
-    ----------
-    cls : type
-        The class to create an instance of.
-
-    Returns
-    -------
-    instance : cls
-        A new instance of ``cls``.
-    """
-    return cls()
-
-
 def _fill_function(*args):
     """Fills in the rest of function data into the skeleton function object
 
