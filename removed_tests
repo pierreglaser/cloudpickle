@@ -1,0 +1,348 @@
+########################################################################################
+#                       TEST INHERENTLY DEALING WITH CLOSURE                           #
+########################################################################################
+
+test_recursive_closure:
+    goal: test that a nested function defined recursively (e.g calling itself
+        during it's execution) and with a non-null closure works fine when
+        pickled-depickled
+    fails because: pickles a nested function with non-none closure
+    keep: not now because it deals inherently with closure
+        handling
+    status: REMOVED
+    commit last touched:
+
+test_empty_cell_preserved:
+    goal: raise NameError when pickling a nested function using an undefined
+        variable
+    fails because: pickles a nested function with non-none closure
+    keep: not now because it deals inherently with closure
+        handling
+    status: REMOVED
+    commit last touched:
+
+test_unhashable_closure:
+    goal: checkes pickle_depickle on a function with a unhashable closure
+    fails because: pickles a nested function with non-none closure
+    keep: not now because it deals inherently with closure
+        handling
+    status: REMOVED
+    commit last touched:
+
+test_locally_defined_function_and_class:
+    goal: test pickling_depickling of classes with references to variables in
+    the closure of their methods.
+    fails because: pickles a nested function with non-none closure
+    keep: not now because it deals inherently with closure handling
+    status: REMOVED
+    commit last touched:
+
+test_submodule_closure:
+    goal: test pickle_depickle a function whose closure contains a submodule
+    fails because: pickles a nested function with non-none closure
+    keep: no, since the equivalent of this in the __main__
+        process is test_submodule
+    status: REMOVED
+    commit last touched:
+
+test_cell_manipulation:
+    goal: make sure the manipulation of cells (with or with no content set)
+        works as expected
+    fails because: only relevant when dealing with closures
+    keep: not now because it deals inherently with closure handling
+    status: REMOVED
+    commit last touched:
+
+test_builtin_function_without_module:
+    goal: pickle builtin type constructors by pickling a function calling the
+        constructor instead, pickled using save_function_tuple.
+    fails because: the type is in the closure of the function
+    keep: not now because it deals inherently with closure handling. Out of the
+        scope of dynamic function pickling.
+
+########################################################################################
+#                                   TESTS PICKLING CLASSES                             #
+########################################################################################
+
+test_interactively_defined_function:
+    goal: pickle some basic objects defined in a __main__ module: functions,
+        classes...
+    fails because: temporarily dropping dynamic class pickling, because it
+        occasionally involves non-empty closures
+    keep: yes, but not right now, we limit ourselves to the most basic cases
+    status: BROKEN
+    commit last touched:
+
+test_abc
+    goal:
+    fails because: temporarily dropping dynamic class pickling, because it
+        occasionally involves non-empty closures
+    keep: yes, but not right now, we limit ourselves to the most basic cases
+    status: REMOVED
+    commit last touched:
+
+test_cycle_in_classdict_globals
+    goal:
+    fails because: temporarily dropping dynamic class pickling, because it
+        occasionally involves non-empty closures
+    keep: yes, but not right now, we limit ourselves to the most basic cases
+    status: REMOVED
+    commit last touched:
+
+test_faulty_module
+    goal:
+    fails because: temporarily dropping dynamic class pickling, because it
+        occasionally involves non-empty closures
+    keep: yes, but not right now, we limit ourselves to the most basic cases
+    status: REMOVED
+    commit last touched:
+
+test_weakset_identity_preservation
+    goal: Test that weaksets don't lose all their inhabitants if they're pickled in a
+	larger data structure that includes other references to their inhabitants.
+    fails because: uses classes in its implementation
+    keep: I guess yes, but would have to re-implement it
+    status: BROKEN
+    commit last touched:
+
+
+########################################################################################
+#                        TEST WITH DYNAMIC MODULES                                     #
+########################################################################################
+
+test_dynamic_module:
+    goal: pickle a dynamic module
+    fails because: removed dynamic module support
+    keep: not for now (additional feature)
+    status: REMOVED
+    commit last touched: 63e4a82
+
+test_dynamic_modules_globals:
+    goal: test the behavior of dynamic_modules_globals, which acts like sys.modules for
+        dynamic modules.
+    fails because: removed dynamic module support
+    keep: not for now (additional feature)
+    status: REMOVED
+    commit last touched: 63e4a82
+
+test_load_dynamic_module_in_grandchild_process:
+    goal: Make sure that when loaded, a dynamic module preserves its dynamic property.
+    fails because: removed dynamic module support
+    keep: not for now (additional feature)
+    status: REMOVED
+    commit last touched: 63e4a82
+
+test_function_from_dynamic_module_with_globals_modifications:
+    goal: make sure variables from the global namespace of the process in which
+        a function from a dynamic module gets unpickled are not overriden if the
+        function carries some global variables with it
+        fails because: removed dynamic module support
+    keep: not for now (additional feature)
+    status: REMOVED
+    commit last touched: 63e4a82
+
+test_is_dynamic_module:
+    goal: make sure cloudpickle spots dynamic module correctly
+    keep: not for now (additional feature)
+    status: REMOVED
+    commit last touched: 63e4a82
+
+
+########################################################################################
+#                       TEST WITH SPECIFIC, ISOLATED FUNCTIONALITIES                   #
+########################################################################################
+
+test_builtin_type__new__:
+    goal: test pickling of builtin type constructors
+    fails because: this functionality is not essential for dynamic function pickling
+    keep: not for now (additional feature)
+    status: TO BE REMOVED
+    commit last touched:
+
+test_dynamic_pytest_module:
+    goal: Test case for pull request https://github.com/cloudpipe/cloudpickle/pull/116
+    fails because: pickles a nested function with non-none closure
+    keep: not for now (additional feature)
+    status: REMOVED
+    commit last touched:
+
+test_namedtuple:
+    goal: test pickling of namedtuples
+    fails because: this is not the most important use case, AND also this
+        pickles a function (_factory), that has a non-None closure.
+    keep: not for now (additional feature)
+    status: TO BE REMOVED
+    commit last touched:
+
+test_tornado_coroutine:
+    goal: test pickle_depickling a locally defined coroutine function
+    fails because: removed tornado coroutine support
+    keep: not for now (additional feature)
+    status: REMOVED
+    commit last touched: 86f559d
+
+test_EllipsisType:
+    goal: pickle_depickle type(Ellipsis)
+    fails because: removed Elipsis pickling functionality
+    keep: not for now (additional feature)
+    status: REMOVED
+    commit last touched: 86f559d
+test_ufunc
+    goal:
+    fails because: drop numpy/scipy support
+    keep: not for now (additional feature)
+    status: REMOVED
+    commit last touched:
+
+
+########################################################################################
+#                                    RETRO-COMPATIBILITY TESTS                         #
+########################################################################################
+test_function_pickle_compat_0_4_1:
+    goal: make sure cloudpickle can depickle pickle strings from 0.4.1 (Python 2.7)
+    fails because: removed retro-compatibilty (not needed as the code will be
+        new in cpython)
+    keep: no
+    status: REMOVED
+    commit last touched: 86f559d
+
+test_function_pickle_compat_0_4_0:
+    goal: make sure cloudpickle can depickle pickle strings from 0.4.0 (Python 2.7)
+    fails because: removed retro-compatibilty (not needed as the code will be new in
+        cpython)
+    keep: no
+    status: REMOVED
+    commit last touched: 86f559d
+
+
+########################################################################################
+#                                  FIXED TESTS (NO CLOSURE NEEDED)                     #
+########################################################################################
+
+test_correct_globals_import:
+    goal: checks that non-used globals are not part of the pickle string of a function
+    fails because: pickles a nested function with non-none closure
+    keep: yes. execute this test in the main and not in a local scope.
+    status: FIXED
+    commit last touched:
+
+test_import:
+    goal: according to the doc, like test_multiprocess except subpackage modules referenced directly
+    fails because: defined function has a non-null closure
+    keep: yes, same remark as test_multiprocess
+    status: FIXED
+    commit last touched:
+
+test_nested_lambdas
+    goal: checkes pickle_depickle on a lambda calling another lambda, both
+        defined in a local scope
+    fails because: pickles a nested function with non-none closure
+    keep: yes. execute this test in the main and not in a local
+    scope.
+    status: FIXED
+    commit last touched:
+
+test_wraps_preserves_function_[annotations, doc, name]:
+    goal: test that decorating a function using functools.wraps and the
+    pickle_depickling it preserves function [annotation, doc, name]
+    fails because: pickles a nested function with non-none closure
+    keep: yes. execute this test in the main and not in a local
+    scope.
+    status: FIXED
+    commit last touched:
+
+
+test_multiprocess:
+    goal: define a function (in this case, in a local scope) pickle it and run
+    it in another process
+    fails because: defined function has a non-null closure
+    keep: it seems to deal with the way modules referenced and used in a function modules are imported.
+    Fundamentally, cloud do it in the __main__ scope. Would say keep, but with no closure
+    status: BROKEN
+    commit last touched:
+
+########################################################################################
+#                                   TEST FOR FILE SAVING                               #
+########################################################################################
+
+test_closed_file:
+    goal:
+    fails because: removed file saving functionality
+    keep: not for now
+    status: REMOVED
+    commit last touched:
+test_empty_file:
+    goal:
+    fails because: removed file saving functionality
+    keep: not for now
+    status: REMOVED
+    commit last touched:
+test_pickling_special_file_handles:
+    goal:
+    fails because: removed file saving functionality
+    keep: not for now
+    status: REMOVED
+    commit last touched:
+test_plus_mode:
+    goal:
+    fails because: removed file saving functionality
+    keep: not for now
+    status: REMOVED
+    commit last touched:
+test_r_mode:
+    goal:
+    fails because: removed file saving functionality
+    keep: not for now
+    status: REMOVED
+    commit last touched:
+test_seek:
+    goal:
+    fails because: removed file saving functionality
+    keep: not for now
+    status: REMOVED
+    commit last touched:
+test_w_mode:
+    goal:
+    fails because: removed file saving functionality
+    keep: not for now
+    status: REMOVED
+    commit last touched:
+
+test_pickling_file_handles
+    goal:
+    fails because: removed file saving functionality
+    keep: not for now
+    status: REMOVED
+    commit last touched:
+
+########################################################################################
+#                                   BROKEN TESTS                                       #
+########################################################################################
+
+test_dynamically_generated_class_that_uses_super:
+    goal: test pickling_depickling of a subclass that uses super in some of its methods
+    fails because: pickles a nested function with non-none closure
+    keep: yes. execute this test in the main and not in a local scope.
+    status: BROKEN
+    commit last touched:
+
+test_memoryview
+    goal: pickling a memoryview
+    fails because: dropped memoryview pickling functionality
+    keep: not for now (additional feature)
+    status: REMOVED
+    commit last touched:
+
+test_sliced_and_non_contiguous_memoryview
+    goal: test pickling_depickling of a subclass that uses super in some of its methods
+    fails because: pickles a nested function with non-none closure
+    keep: yes. execute this test in the main and not in a local scope.
+    status: REMOVED
+    commit last touched:
+
+test_large_memoryview
+    goal: test pickling_depickling of a subclass that uses super in some of its methods
+    fails because: pickles a nested function with non-none closure
+    keep: yes. execute this test in the main and not in a local scope.
+    status: REMOVED
+    commit last touched:
