@@ -88,9 +88,15 @@ deleted_tests=$(git diff master..basic tests/cloudpickle_test.py | \
 n_warnings=0
 for test in ${deleted_tests}; do
     is_in_removed_test_summary_file=$(grep "${test}" removed_tests)
-    if [[ -z ${is_in_removed_test_summary_file} ]]; then
-        let n_warnings++
-        echo "WARNING: ${test} is not mentionned in the summary file"
+    # test_cm and test_sm are two methods of an object in the test file, they
+    # are not actual tests, so we don't include them in the warnings
+    if [ "${test}" = "test_cm" ] || [ "${test}" = test_sm ] ; then
+        :
+    else
+        if [[ -z ${is_in_removed_test_summary_file} ]]; then
+            let n_warnings++
+            echo "WARNING: ${test} is not mentionned in the summary file"
+        fi
     fi
 done
 
