@@ -661,12 +661,6 @@ def subimport(name):
     return sys.modules[name]
 
 
-def dynamic_subimport(name, vars):
-    mod = types.ModuleType(name)
-    mod.__dict__.update(vars)
-    return mod
-
-
 # restores function attributes
 def _restore_attr(obj, attr):
     for key, val in attr.items():
