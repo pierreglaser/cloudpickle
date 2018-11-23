@@ -216,6 +216,20 @@ test_NotImplementedType:
     status: REMOVED
     commit last touched:
 
+test_itemgetter:
+    goal: pickle operator.itemgetter
+    fails because: dropped support
+    keep: not for now (additional feature)
+    status: REMOVED
+    commit last touched:
+
+test_attrgetter
+    goal: pickle operator.attrgetter
+    fails because: dropped support
+    keep: not for now (additional feature)
+    status: REMOVED
+    commit last touched:
+
 
 ########################################################################################
 #                                    RETRO-COMPATIBILITY TESTS                         #

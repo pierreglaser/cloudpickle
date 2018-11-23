@@ -4,7 +4,6 @@ import functools
 from io import BytesIO
 import itertools
 import logging
-from operator import itemgetter, attrgetter
 import pickle
 import random
 import subprocess
@@ -53,37 +52,6 @@ class CloudPicklerTest(unittest.TestCase):
 class CloudPickleTest(unittest.TestCase):
 
     protocol = cloudpickle.DEFAULT_PROTOCOL
-
-    def test_itemgetter(self):
-        d = range(10)
-        getter = itemgetter(1)
-
-        getter2 = pickle_depickle(getter, protocol=self.protocol)
-        self.assertEqual(getter(d), getter2(d))
-
-        getter = itemgetter(0, 3)
-        getter2 = pickle_depickle(getter, protocol=self.protocol)
-        self.assertEqual(getter(d), getter2(d))
-
-    def test_attrgetter(self):
-        class C(object):
-            def __getattr__(self, item):
-                return item
-        d = C()
-        getter = attrgetter("a")
-        getter2 = pickle_depickle(getter, protocol=self.protocol)
-        self.assertEqual(getter(d), getter2(d))
-        getter = attrgetter("a", "b")
-        getter2 = pickle_depickle(getter, protocol=self.protocol)
-        self.assertEqual(getter(d), getter2(d))
-
-        d.e = C()
-        getter = attrgetter("e.a")
-        getter2 = pickle_depickle(getter, protocol=self.protocol)
-        self.assertEqual(getter(d), getter2(d))
-        getter = attrgetter("e.a", "e.b")
-        getter2 = pickle_depickle(getter, protocol=self.protocol)
-        self.assertEqual(getter(d), getter2(d))
 
     def test_func_globals(self):
         class Unpicklable(object):
