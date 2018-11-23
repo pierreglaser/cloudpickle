@@ -358,6 +358,10 @@ class CloudPickleTest(unittest.TestCase):
             os.unlink(pickled_func_path)
 
     def test_correct_globals_import(self):
+        script = '''
+        import cloudpickle
+        import math
+
         def nested_function(x):
             return x + 1
 
@@ -380,6 +384,8 @@ class CloudPickleTest(unittest.TestCase):
 
         assert b'unwanted_function' not in b
         assert b'math' not in b
+        '''
+        assert_run_python_script(textwrap.dedent(script))
 
     def test_NotImplemented(self):
         ExcClone = pickle_depickle(NotImplemented, protocol=self.protocol)
