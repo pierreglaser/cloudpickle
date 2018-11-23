@@ -450,47 +450,85 @@ class CloudPickleTest(unittest.TestCase):
         f() # perform test for error
 
     def test_multiprocess(self):
-        # running a function pickled by another process (a la dask.distributed)
-        def scope():
-            import curses.textpad
-            def example():
-                x = xml.etree.ElementTree.Comment
-                x = curses.textpad.Textbox
-            return example
+        func_filename = 'pickled_function.pk'
+        grandchild_process_script = """'''
+        import pickle
+        import textwrap
+
+        with open('{func_filename}', 'rb') as f:
+            func = pickle.load(f)
+        func()
+        '''""".format(func_filename=func_filename)
+
+        child_process_script = '''
+        import cloudpickle
+        import textwrap
+
+        from testutils import assert_run_python_script
+
+
+        def example():
+            x = xml.etree.ElementTree.Comment
+
+
         global xml
         import xml.etree.ElementTree
-        example = scope()
 
-        s = cloudpickle.dumps(example)
+        with open('{func_filename}', 'wb') as f:
+            s = cloudpickle.dump(example, f)
 
-        # choose "subprocess" rather than "multiprocessing" because the latter
-        # library uses fork to preserve the parent environment.
-        command = ("import pickle, base64; "
-                   "pickle.loads(base64.b32decode('" +
-                   base64.b32encode(s).decode('ascii') +
-                   "'))()")
-        assert not subprocess.call([sys.executable, '-c', command])
+        assert_run_python_script(textwrap.dedent({grandchild_process_script}))
+        '''.format(
+                grandchild_process_script=grandchild_process_script,
+                func_filename=func_filename)
+
+        try:
+            assert_run_python_script(textwrap.dedent(child_process_script))
+        finally:
+            os.unlink(func_filename)
 
     def test_import(self):
         # like test_multiprocess except subpackage modules referenced directly
         # (unlike test_submodule)
+        func_filename = 'pickled_function.pk'
+
+        grandchild_process_script = """'''
+        import pickle
+        import textwrap
+
+        with open('{func_filename}', 'rb') as f:
+            func = pickle.load(f)
+        func()
+        '''""".format(func_filename=func_filename)
+
+        child_process_script = '''
+        import cloudpickle
+        import textwrap
+
+        from testutils import assert_run_python_script
+
         global etree
+
         def scope():
-            import curses.textpad as foobar
             def example():
                 x = etree.Comment
-                x = foobar.Textbox
             return example
         example = scope()
         import xml.etree.ElementTree as etree
 
-        s = cloudpickle.dumps(example)
 
-        command = ("import pickle, base64; "
-                   "pickle.loads(base64.b32decode('" +
-                   base64.b32encode(s).decode('ascii') +
-                   "'))()")
-        assert not subprocess.call([sys.executable, '-c', command])
+        with open('{func_filename}', 'wb') as f:
+            s = cloudpickle.dump(example, f)
+
+        assert_run_python_script(textwrap.dedent({grandchild_process_script}))
+        '''.format(
+                grandchild_process_script=grandchild_process_script,
+                func_filename=func_filename)
+
+        try:
+            assert_run_python_script(textwrap.dedent(child_process_script))
+        finally:
+            os.unlink(func_filename)
 
     def check_logger(self, name):
         logger = logging.getLogger(name)
