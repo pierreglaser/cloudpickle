@@ -78,6 +78,15 @@ test_closure_none_is_preserved:
     status: REMOVED
     commit last touched:
 
+test_closure_interacting_with_a_global_variable:
+    goal: ensure global namespace at pickling time and global namespace at
+        unpickling time deal with global variables collisions as expected
+    fails because: actually not failing, I support because of the use of the
+        keyword global that prevents the closure from being filled
+    keep: not now.
+    status: REMOVED
+    commit last touched:
+
 ########################################################################################
 #                                   TESTS PICKLING CLASSES                             #
 ########################################################################################
