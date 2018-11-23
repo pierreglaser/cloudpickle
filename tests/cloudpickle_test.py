@@ -188,38 +188,6 @@ class CloudPickleTest(unittest.TestCase):
         pickle_clone = pickle_depickle(pickle, protocol=self.protocol)
         self.assertEqual(pickle, pickle_clone)
 
-    def test_module_locals_behavior(self):
-        # Makes sure that a local function defined in another module is
-        # correctly serialized. This notably checks that the globals are
-        # accessible and that there is no issue with the builtins (see #211)
-
-        pickled_func_path = 'local_func_g.pkl'
-
-        child_process_script = '''
-        import pickle
-        import gc
-        with open("{pickled_func_path}", 'rb') as f:
-            func = pickle.load(f)
-
-        assert func(range(10)) == 45
-        '''
-
-        child_process_script = child_process_script.format(
-                pickled_func_path=pickled_func_path)
-
-        try:
-
-            from .testutils import make_local_function
-
-            g = make_local_function()
-            with open(pickled_func_path, 'wb') as f:
-                cloudpickle.dump(g, f)
-
-            assert_run_python_script(textwrap.dedent(child_process_script))
-
-        finally:
-            os.unlink(pickled_func_path)
-
     def test_correct_globals_import(self):
         script = '''
         import cloudpickle

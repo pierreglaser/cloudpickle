@@ -60,6 +60,24 @@ test_builtin_function_without_module:
     keep: not now because it deals inherently with closure handling. Out of the
         scope of dynamic function pickling.
 
+test_module_locals_behavior:
+    goal: Makes sure that a local function defined in another module is correctly
+        serialized. This notably checks that the globals are accessible and that
+        there is no issue with the builtins (see #211)
+    fails because: dropped support of nested function pickling
+    keep: not now.
+    status: REMOVED
+    commit last touched:
+
+test_closure_none_is_preserved:
+    goal: make sure a function with a None closure has a None closure at
+        depickling
+    fails because: not failing, simply it should be part of a broader test
+        about attributes perservation
+    keep: not now.
+    status: REMOVED
+    commit last touched:
+
 ########################################################################################
 #                                   TESTS PICKLING CLASSES                             #
 ########################################################################################
