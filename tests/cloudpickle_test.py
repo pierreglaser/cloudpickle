@@ -597,23 +597,6 @@ class CloudPickleTest(unittest.TestCase):
             finally:
                 sys.modules.pop("_faulty_module", None)
 
-    def test_dynamic_pytest_module(self):
-        # Test case for pull request https://github.com/cloudpipe/cloudpickle/pull/116
-        import py
-
-        def f():
-            s = py.builtin.set([1])
-            return s.pop()
-
-        # some setup is required to allow pytest apimodules to be correctly
-        # serializable.
-        from cloudpickle import CloudPickler
-        CloudPickler.dispatch[type(py.builtin)] = CloudPickler.save_module
-        g = cloudpickle.loads(cloudpickle.dumps(f))
-
-        result = g()
-        self.assertEqual(1, result)
-
     def test_function_module_name(self):
         func = lambda x: x
         cloned = pickle_depickle(func, protocol=self.protocol)
