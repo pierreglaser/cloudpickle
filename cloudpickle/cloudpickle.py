@@ -425,11 +425,7 @@ class CloudPickler(Pickler):
         defaults = func.__defaults__
 
         # process closure
-        closure = (
-            list(map(_get_cell_contents, func.__closure__))
-            if func.__closure__ is not None
-            else None
-        )
+        closure = func.__closure__
 
         # save the dict
         dct = func.__dict__
@@ -720,14 +716,6 @@ def _gen_not_implemented():
     return NotImplemented
 
 
-def _get_cell_contents(cell):
-    try:
-        return cell.cell_contents
-    except ValueError:
-        # sentinel used by ``_fill_function`` which will leave the cell empty
-        return _empty_cell_value
-
-
 def instance(cls):
     """Create a new instance of a class.
 
@@ -742,15 +730,6 @@ def instance(cls):
         A new instance of ``cls``.
     """
     return cls()
-
-
-@instance
-class _empty_cell_value(object):
-    """sentinel for empty closures
-    """
-    @classmethod
-    def __reduce__(cls):
-        return cls.__name__
 
 
 def _fill_function(*args):
