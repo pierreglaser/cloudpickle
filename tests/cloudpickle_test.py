@@ -167,10 +167,17 @@ class CloudPickleTest(unittest.TestCase):
         self.assertEqual(pickle_depickle(lambda: 1)(), 1)
 
     def test_nested_lambdas(self):
+        script = '''
+        from tests.cloudpickle_test import pickle_depickle
+
+
         a, b = 1, 2
         f1 = lambda x: x + a
         f2 = lambda x: f1(x) // b
-        self.assertEqual(pickle_depickle(f2, protocol=self.protocol)(1), 1)
+        assert pickle_depickle(f2, protocol={protocol})(1) == 1
+        '''.format(protocol=self.protocol)
+
+        assert_run_python_script(textwrap.dedent(script))
 
     def test_closure_none_is_preserved(self):
         def f():
