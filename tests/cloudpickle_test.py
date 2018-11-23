@@ -830,7 +830,10 @@ class CloudPickleTest(unittest.TestCase):
             self.assertEqual(next(counter), next(new_counter))
 
     def test_wraps_preserves_function_name(self):
+        script = '''
+        from tests.cloudpickle_test import pickle_depickle
         from functools import wraps
+
 
         def f():
             pass
@@ -841,9 +844,13 @@ class CloudPickleTest(unittest.TestCase):
 
         f2 = pickle_depickle(g)
 
-        self.assertEqual(f2.__name__, f.__name__)
+        assert f2.__name__ == f.__name__
+        '''
+        assert_run_python_script(textwrap.dedent(script))
 
     def test_wraps_preserves_function_doc(self):
+        script = '''
+        from tests.cloudpickle_test import pickle_depickle
         from functools import wraps
 
         def f():
@@ -856,12 +863,16 @@ class CloudPickleTest(unittest.TestCase):
 
         f2 = pickle_depickle(g)
 
-        self.assertEqual(f2.__doc__, f.__doc__)
+        assert f2.__doc__ == f.__doc__
+        '''
+        assert_run_python_script(textwrap.dedent(script))
 
     @unittest.skipIf(sys.version_info < (3, 7),
                      """This syntax won't work on py2 and pickling annotations
                      isn't supported for py36 and below.""")
     def test_wraps_preserves_function_annotations(self):
+        script = '''
+        from tests.cloudpickle_test import pickle_depickle
         from functools import wraps
 
         def f(x):
@@ -875,7 +886,9 @@ class CloudPickleTest(unittest.TestCase):
 
         f2 = pickle_depickle(g)
 
-        self.assertEqual(f2.__annotations__, f.__annotations__)
+        assert f2.__annotations__ == f.__annotations__
+        '''
+        assert_run_python_script(textwrap.dedent(script))
 
 
 class Protocol2CloudPickleTest(CloudPickleTest):
