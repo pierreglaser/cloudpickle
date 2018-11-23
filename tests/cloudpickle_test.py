@@ -386,15 +386,6 @@ class CloudPickleTest(unittest.TestCase):
         res = pickle_depickle(type(NotImplemented), protocol=self.protocol)
         self.assertEqual(type(NotImplemented), res)
 
-    def test_builtin_function_without_module(self):
-        on = object.__new__
-        on_depickled = pickle_depickle(on, protocol=self.protocol)
-        self.assertEqual(type(on_depickled(object)), type(object()))
-
-        fi = itertools.chain.from_iterable
-        fi_depickled = pickle_depickle(fi, protocol=self.protocol)
-        self.assertEqual(list(fi_depickled([[1, 2], [3, 4]])), [1, 2, 3, 4])
-
     def test_extended_arg(self):
         # Functions with more than 65535 global vars prefix some global
         # variable references with the EXTENDED_ARG opcode.

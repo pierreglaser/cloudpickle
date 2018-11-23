@@ -87,39 +87,10 @@ _BUILTIN_TYPE_NAMES = {
         types.CodeType: 'CodeType',
         types.MethodType: 'MethodType'
         }
-for k, v in types.__dict__.items():
-    if type(v) is type:
-        _BUILTIN_TYPE_NAMES[v] = k
 
 
 def _builtin_type(name):
     return getattr(types, name)
-
-
-def _make__new__factory(type_):
-    def _factory():
-        return type_.__new__
-    return _factory
-
-
-# NOTE: These need to be module globals so that they're pickleable as globals.
-_get_dict_new = _make__new__factory(dict)
-_get_frozenset_new = _make__new__factory(frozenset)
-_get_list_new = _make__new__factory(list)
-_get_set_new = _make__new__factory(set)
-_get_tuple_new = _make__new__factory(tuple)
-_get_object_new = _make__new__factory(object)
-
-# Pre-defined set of builtin_function_or_method instances that can be
-# serialized.
-_BUILTIN_TYPE_CONSTRUCTORS = {
-    dict.__new__: _get_dict_new,
-    frozenset.__new__: _get_frozenset_new,
-    set.__new__: _get_set_new,
-    list.__new__: _get_list_new,
-    tuple.__new__: _get_tuple_new,
-    object.__new__: _get_object_new,
-}
 
 
 def _walk_global_ops(code):
@@ -191,24 +162,6 @@ class CloudPickler(Pickler):
         Determines what kind of function obj is (e.g. lambda, defined at
         interactive prompt, etc) and handles the pickling appropriately.
         """
-        try:
-            should_special_case = obj in _BUILTIN_TYPE_CONSTRUCTORS
-        except TypeError:
-            # Methods of builtin types aren't hashable in python 2.
-            should_special_case = False
-
-        if should_special_case:
-            # We keep a special-cased cache of built-in type constructors at
-            # global scope, because these functions are structured very
-            # differently in different python versions and implementations (for
-            # example, they're instances of types.BuiltinFunctionType in
-            # CPython, but they're ordinary types.FunctionType instances in
-            # PyPy).
-            #
-            # If the function we've received is in that cache, we just
-            # serialize it as a lookup into the cache.
-            return self.save_reduce(_BUILTIN_TYPE_CONSTRUCTORS[obj], (), obj=obj)
-
         write = self.write
 
         if name is None:
