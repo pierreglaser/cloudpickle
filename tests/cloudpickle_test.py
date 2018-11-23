@@ -93,12 +93,6 @@ class CloudPickleTest(unittest.TestCase):
         getter2 = pickle_depickle(getter, protocol=self.protocol)
         self.assertEqual(getter(d), getter2(d))
 
-    # Regression test for SPARK-3415
-    def test_pickling_file_handles(self):
-        out1 = sys.stderr
-        out2 = pickle.loads(cloudpickle.dumps(out1))
-        self.assertEqual(out1, out2)
-
     def test_func_globals(self):
         class Unpicklable(object):
             def __reduce__(self):
