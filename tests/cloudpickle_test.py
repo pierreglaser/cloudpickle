@@ -615,23 +615,6 @@ class CloudPickleTest(unittest.TestCase):
         cloned = pickle_depickle(func, protocol=self.protocol)
         self.assertEqual(cloned.__qualname__, func.__qualname__)
 
-    def test_namedtuple(self):
-
-        MyTuple = collections.namedtuple('MyTuple', ['a', 'b', 'c'])
-        t = MyTuple(1, 2, 3)
-
-        depickled_t, depickled_MyTuple = pickle_depickle(
-            [t, MyTuple], protocol=self.protocol)
-        self.assertTrue(isinstance(depickled_t, depickled_MyTuple))
-
-        self.assertEqual((depickled_t.a, depickled_t.b, depickled_t.c),
-                         (1, 2, 3))
-        self.assertEqual((depickled_t[0], depickled_t[1], depickled_t[2]),
-                         (1, 2, 3))
-
-        self.assertEqual(depickled_MyTuple.__name__, 'MyTuple')
-        self.assertTrue(issubclass(depickled_MyTuple, tuple))
-
     def test_builtin_type__new__(self):
         # Functions occasionally take the __new__ of these types as default
         # parameters for factories.  For example, on Python 3.3,
