@@ -195,6 +195,7 @@ test_EllipsisType:
     keep: not for now (additional feature)
     status: REMOVED
     commit last touched: 86f559d
+
 test_ufunc
     goal:
     fails because: drop numpy/scipy support
@@ -230,6 +231,12 @@ test_attrgetter
     status: REMOVED
     commit last touched:
 
+test_buffer:
+    goal: pickle a buffer
+    fails because: not failing, actually it is skipped in python3
+    keep: no (python 2 object test)
+    status: REMOVED
+    commit last touched:
 
 ########################################################################################
 #                                    RETRO-COMPATIBILITY TESTS                         #

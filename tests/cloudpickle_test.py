@@ -73,17 +73,6 @@ class CloudPickleTest(unittest.TestCase):
         self.assertTrue("exit" in func_code.co_names)
         cloudpickle.dumps(foo)
 
-    def test_buffer(self):
-        try:
-            buffer_obj = buffer("Hello")
-            buffer_clone = pickle_depickle(buffer_obj, protocol=self.protocol)
-            self.assertEqual(buffer_clone, str(buffer_obj))
-            buffer_obj = buffer("Hello", 2, 3)
-            buffer_clone = pickle_depickle(buffer_obj, protocol=self.protocol)
-            self.assertEqual(buffer_clone, str(buffer_obj))
-        except NameError:  # Python 3 does no longer support buffers
-            pass
-
     def test_lambda(self):
         self.assertEqual(pickle_depickle(lambda: 1)(), 1)
 
