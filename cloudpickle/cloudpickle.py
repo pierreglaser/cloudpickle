@@ -479,16 +479,6 @@ class CloudPickler(Pickler):
 
     dispatch[weakref.WeakSet] = save_weakset
 
-    def save_logger(self, obj):
-        self.save_reduce(logging.getLogger, (obj.name,), obj=obj)
-
-    dispatch[logging.Logger] = save_logger
-
-    def save_root_logger(self, obj):
-        self.save_reduce(logging.getLogger, (), obj=obj)
-
-    dispatch[logging.RootLogger] = save_root_logger
-
 
 # Shorthands for legacy support
 
