@@ -674,10 +674,6 @@ def _restore_attr(obj, attr):
     return obj
 
 
-def _get_module_builtins():
-    return pickle.__builtins__
-
-
 def print_exec(stream):
     ei = sys.exc_info()
     traceback.print_exception(ei[0], ei[1], ei[2], None, stream)
