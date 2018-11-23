@@ -249,72 +249,6 @@ class CloudPickler(Pickler):
                             # then discards the reference to it
                             self.write(pickle.POP)
 
-    def save_dynamic_class(self, obj):
-        """
-        Save a class that can't be stored as module global.
-
-        This method is used to serialize classes that are defined inside
-        functions, or that otherwise can't be serialized as attribute lookups
-        from global modules.
-        """
-        clsdict = dict(obj.__dict__)  # copy dict proxy to a dict
-        clsdict.pop('__weakref__', None)
-
-        # For ABCMeta in python3.7+, remove _abc_impl as it is not picklable.
-        # This is a fix which breaks the cache but this only makes the first
-        # calls to issubclass slower.
-        if "_abc_impl" in clsdict:
-            import abc
-            (registry, _, _, _) = abc._get_dump(obj)
-            clsdict["_abc_impl"] = [subclass_weakref()
-                                    for subclass_weakref in registry]
-
-        # On PyPy, __doc__ is a readonly attribute, so we need to include it in
-        # the initial skeleton class.  This is safe because we know that the
-        # doc can't participate in a cycle with the original class.
-        type_kwargs = {'__doc__': clsdict.pop('__doc__', None)}
-
-        # If type overrides __dict__ as a property, include it in the type kwargs.
-        # In Python 2, we can't set this attribute after construction.
-        __dict__ = clsdict.pop('__dict__', None)
-        if isinstance(__dict__, property):
-            type_kwargs['__dict__'] = __dict__
-
-        save = self.save
-        write = self.write
-
-        # We write pickle instructions explicitly here to handle the
-        # possibility that the type object participates in a cycle with its own
-        # __dict__. We first write an empty "skeleton" version of the class and
-        # memoize it before writing the class' __dict__ itself. We then write
-        # instructions to "rehydrate" the skeleton class by restoring the
-        # attributes from the __dict__.
-        #
-        # A type can appear in a cycle with its __dict__ if an instance of the
-        # type appears in the type's __dict__ (which happens for the stdlib
-        # Enum class), or if the type defines methods that close over the name
-        # of the type, (which is common for Python 2-style super() calls).
-
-        # Push the rehydration function.
-        save(_rehydrate_skeleton_class)
-
-        # Mark the start of the args tuple for the rehydration function.
-        write(pickle.MARK)
-
-        # Create and memoize an skeleton class with obj's name and bases.
-        tp = type(obj)
-        self.save_reduce(tp, (obj.__name__, obj.__bases__, type_kwargs), obj=obj)
-
-        # Now save the rest of obj's __dict__. Any references to obj
-        # encountered while saving will point to the skeleton class.
-        save(clsdict)
-
-        # Write a tuple of (skeleton_class, clsdict).
-        write(pickle.TUPLE)
-
-        # Call _rehydrate_skeleton_class(skeleton_class, clsdict)
-        write(pickle.REDUCE)
-
     def save_function_tuple(self, func):
         """  Pickles an actual func object.
 
@@ -715,21 +649,3 @@ def _make_skel_func(code, cell_count, base_globals=None):
     base_globals['__builtins__'] = __builtins__
 
     return types.FunctionType(code, base_globals, None, None, None)
-
-
-def _rehydrate_skeleton_class(skeleton_class, class_dict):
-    """Put attributes from `class_dict` back on `skeleton_class`.
-
-    See CloudPickler.save_dynamic_class for more info.
-    """
-    registry = None
-    for attrname, attr in class_dict.items():
-        if attrname == "_abc_impl":
-            registry = attr
-        else:
-            setattr(skeleton_class, attrname, attr)
-    if registry is not None:
-        for subclass in registry:
-            skeleton_class.register(subclass)
-
-    return skeleton_class

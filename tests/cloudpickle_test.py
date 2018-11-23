@@ -189,26 +189,6 @@ class CloudPickleTest(unittest.TestCase):
         '''.format(protocol=self.protocol)
         assert_run_python_script(textwrap.dedent(script))
 
-
-    def test_cycle_in_classdict_globals(self):
-
-        class C(object):
-
-            def it_works(self):
-                return "woohoo!"
-
-        C.C_again = C
-        C.instance_of_C = C()
-
-        depickled_C = pickle_depickle(C, protocol=self.protocol)
-        depickled_instance = pickle_depickle(C())
-
-        # Test instance of depickled class.
-        self.assertEqual(depickled_C().it_works(), "woohoo!")
-        self.assertEqual(depickled_C.C_again().it_works(), "woohoo!")
-        self.assertEqual(depickled_C.instance_of_C.it_works(), "woohoo!")
-        self.assertEqual(depickled_instance.it_works(), "woohoo!")
-
     def test_partial(self):
         partial_obj = functools.partial(min, 1)
         partial_clone = pickle_depickle(partial_obj, protocol=self.protocol)
@@ -508,43 +488,6 @@ class CloudPickleTest(unittest.TestCase):
         # logging.Logger object
         self.check_logger('cloudpickle.dummy_test_logger')
 
-    def test_abc(self):
-
-        @abc.abstractmethod
-        def foo(self):
-            raise NotImplementedError('foo')
-
-        # Invoke the metaclass directly rather than using class syntax for
-        # python 2/3 compat.
-        AbstractClass = abc.ABCMeta('AbstractClass', (object,), {'foo': foo})
-
-        class ConcreteClass(AbstractClass):
-            def foo(self):
-                return 'it works!'
-
-        # This class is local so we can safely register tuple in it to verify
-        # the unpickled class also register tuple.
-        AbstractClass.register(tuple)
-
-        depickled_base = pickle_depickle(AbstractClass, protocol=self.protocol)
-        depickled_class = pickle_depickle(ConcreteClass,
-                                          protocol=self.protocol)
-        depickled_instance = pickle_depickle(ConcreteClass())
-
-        assert issubclass(tuple, AbstractClass)
-        assert issubclass(tuple, depickled_base)
-
-        self.assertEqual(depickled_class().foo(), 'it works!')
-        self.assertEqual(depickled_instance.foo(), 'it works!')
-
-        self.assertRaises(TypeError, depickled_base)
-
-        class DepickledBaseSubclass(depickled_base):
-            def foo(self):
-                return 'it works for realz!'
-
-        self.assertEqual(DepickledBaseSubclass().foo(), 'it works for realz!')
-
     def test_weakset_identity_preservation(self):
         # Test that weaksets don't lose all their inhabitants if they're
         # pickled in a larger data structure that includes other references to
@@ -567,36 +510,6 @@ class CloudPickleTest(unittest.TestCase):
         self.assertEqual(len(weakset), 2)
 
         self.assertEqual(set(weakset), {depickled1, depickled2})
-
-    def test_faulty_module(self):
-        for module_name in ['_faulty_module', '_missing_module', None]:
-            class FaultyModule(object):
-                def __getattr__(self, name):
-                    # This throws an exception while looking up within
-                    # pickle.whichmodule or getattr(module, name, None)
-                    raise Exception()
-
-            class Foo(object):
-                __module__ = module_name
-
-                def foo(self):
-                    return "it works!"
-
-            def foo():
-                return "it works!"
-
-            foo.__module__ = module_name
-
-            sys.modules["_faulty_module"] = FaultyModule()
-            try:
-                # Test whichmodule in save_global.
-                self.assertEqual(pickle_depickle(Foo()).foo(), "it works!")
-
-                # Test whichmodule in save_function.
-                cloned = pickle_depickle(foo, protocol=self.protocol)
-                self.assertEqual(cloned(), "it works!")
-            finally:
-                sys.modules.pop("_faulty_module", None)
 
     def test_function_module_name(self):
         func = lambda x: x
