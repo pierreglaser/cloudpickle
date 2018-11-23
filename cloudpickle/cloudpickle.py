@@ -410,19 +410,6 @@ class CloudPickler(Pickler):
 
     dispatch[type] = save_global
 
-    def save_itemgetter(self, obj):
-        """itemgetter serializer (needed for namedtuple support)"""
-        class Dummy:
-            def __getitem__(self, item):
-                return item
-        items = obj(Dummy())
-        if not isinstance(items, tuple):
-            items = (items,)
-        return self.save_reduce(operator.itemgetter, items)
-
-    if type(operator.itemgetter) is type:
-        dispatch[operator.itemgetter] = save_itemgetter
-
 
 # Shorthands for legacy support
 
