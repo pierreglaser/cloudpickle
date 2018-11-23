@@ -122,9 +122,16 @@ class CloudPickleTest(unittest.TestCase):
         assert_run_python_script(textwrap.dedent(script))
 
     def test_partial(self):
+        script = '''
+        import functools
+        from tests.cloudpickle_test import pickle_depickle
+
+
         partial_obj = functools.partial(min, 1)
-        partial_clone = pickle_depickle(partial_obj, protocol=self.protocol)
-        self.assertEqual(partial_clone(4), 1)
+        partial_clone = pickle_depickle(partial_obj, protocol={protocol})
+        assert partial_clone(4) == 1
+        '''.format(protocol=self.protocol)
+        assert_run_python_script(textwrap.dedent(script))
 
     def test_loads_namespace(self):
         obj = 1, 2, 3, 4
