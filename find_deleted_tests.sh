@@ -63,9 +63,9 @@ number of tests in basic: ${n_tests_in_basic}
 "
 
 if [[ ${n_tests_in_master} != $((n_tests_in_basic + n_deleted_tests)) ]]; then
-    echo "the test count went wrong: the number of deleted test + the number of
-    current tests in basic does not equal the previous number of
-    tests in master"
+    echo "the test count went wrong: the number of deleted tests + the number
+    of current tests in basic does not equal the previous number of tests in
+    master"
     echo "${summary_string}"
 
     git checkout "${PREVIOUS_HEAD}" >/dev/null 2>&1
@@ -79,7 +79,7 @@ echo "${summary_string}"
 printf "\n\n"
 
 echo "making sure the tests summary file is up to date..."
-#make sure all deleted tests are references commit is referenced in
+# make sure all deleted tests are mentionned in the summary file
 deleted_tests=$(git diff master..basic tests/cloudpickle_test.py | \
     grep -e '^[-]\+\s\+def\stest\_' | \
     sed -n "s/^-\s\+def\s\(.*\).*(.*)\:$/\1/p")
