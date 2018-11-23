@@ -53,6 +53,7 @@ git checkout basic >/dev/null 2>&1
 n_tests_in_basic=$(grep -c 'def\stest\_' tests/cloudpickle_test.py)
 git checkout master >/dev/null 2>&1
 n_tests_in_master=$(grep -c 'def\stest\_' tests/cloudpickle_test.py)
+git checkout basic >/dev/null 2>&1
 
 summary_string="
 SUMMARY:
