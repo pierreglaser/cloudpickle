@@ -148,14 +148,20 @@ class CloudPickleTest(unittest.TestCase):
 
     def test_generator(self):
 
+        script = '''
+        from tests.cloudpickle_test import pickle_depickle
+
+
         def some_generator(cnt):
             for i in range(cnt):
                 yield i
 
-        gen2 = pickle_depickle(some_generator, protocol=self.protocol)
+        gen2 = pickle_depickle(some_generator, protocol={protocol})
 
         assert type(gen2(3)) == type(some_generator(3))
         assert list(gen2(3)) == list(range(3))
+        '''.format(protocol=self.protocol)
+        assert_run_python_script(textwrap.dedent(script))
 
     def test_method_descriptors(self):
         f = pickle_depickle(str.upper)
