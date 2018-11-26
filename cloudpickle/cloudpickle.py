@@ -259,7 +259,7 @@ class CloudPickler(Pickler):
         save = self.save
         write = self.write
 
-        code, f_globals, defaults, closure_values, dct, base_globals = self.extract_func_data(func)
+        code, f_globals, defaults, closure_values, dct, base_globals = self.extract_func_data(func)  # noqa
         if closure_values is not None:
             raise pickle.PicklingError('cannot pickle a function with a '
                                        'non-empty closure')
@@ -276,7 +276,6 @@ class CloudPickler(Pickler):
         save(_make_skel_func)
         save((
             code,
-            len(closure_values) if closure_values is not None else -1,
             base_globals,
         ))
         write(pickle.REDUCE)
@@ -493,7 +492,7 @@ def _fill_function(*args):
     return func
 
 
-def _make_skel_func(code, cell_count, base_globals=None):
+def _make_skel_func(code, base_globals=None):
     """ Creates a skeleton function object that contains just the provided
         code and the correct number of cells in func_closure.  All other
         func attributes (e.g. func_globals) are empty.
