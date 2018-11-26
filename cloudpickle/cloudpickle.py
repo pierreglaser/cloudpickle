@@ -267,10 +267,7 @@ class CloudPickler(Pickler):
         save(_fill_function)  # skeleton function updater
         write(pickle.MARK)    # beginning of tuple that _fill_function expects
 
-        self._save_subimports(
-            code,
-            itertools.chain(f_globals.values(), closure_values or ()),
-        )
+        self._save_subimports(code, f_globals.values())
 
         # create a skeleton function object and memoize it
         save(_make_skel_func)
