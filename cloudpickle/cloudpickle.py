@@ -450,23 +450,7 @@ def _fill_function(*args):
 
     The skeleton itself is create by _make_skel_func().
     """
-    if len(args) == 2:
-        func = args[0]
-        state = args[1]
-    elif len(args) == 5:
-        # Backwards compat for cloudpickle v0.4.0, after which the `module`
-        # argument was introduced
-        func = args[0]
-        keys = ['globals', 'defaults', 'dict', 'closure_values']
-        state = dict(zip(keys, args[1:]))
-    elif len(args) == 6:
-        # Backwards compat for cloudpickle v0.4.1, after which the function
-        # state was passed as a dict to the _fill_function it-self.
-        func = args[0]
-        keys = ['globals', 'defaults', 'dict', 'module', 'closure_values']
-        state = dict(zip(keys, args[1:]))
-    else:
-        raise ValueError('Unexpected _fill_value arguments: %r' % (args,))
+    func, state = args
 
     # Only set global variables that do not exist.
     for k, v in state['globals'].items():
@@ -475,19 +459,11 @@ def _fill_function(*args):
 
     func.__defaults__ = state['defaults']
     func.__dict__ = state['dict']
-    if 'annotations' in state:
-        func.__annotations__ = state['annotations']
-    if 'doc' in state:
-        func.__doc__ = state['doc']
-    if 'name' in state:
-        func.__name__ = state['name']
-    if 'module' in state:
-        func.__module__ = state['module']
-    if 'qualname' in state:
-        func.__qualname__ = state['qualname']
-
-    if func.__closure__ is not None:
-        raise NotImplementedError
+    func.__annotations__ = state['annotations']
+    func.__doc__ = state['doc']
+    func.__name__ = state['name']
+    func.__module__ = state['module']
+    func.__qualname__ = state['qualname']
 
     return func
 
