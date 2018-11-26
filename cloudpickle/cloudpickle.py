@@ -298,10 +298,7 @@ class CloudPickler(Pickler):
         write(pickle.TUPLE)
         write(pickle.REDUCE)  # applies _fill_function on the tuple
 
-    _extract_code_globals_cache = (
-        weakref.WeakKeyDictionary()
-        if not hasattr(sys, "pypy_version_info")
-        else {})
+    _extract_code_globals_cache = weakref.WeakKeyDictionary()
 
     @classmethod
     def extract_code_globals(cls, co):
