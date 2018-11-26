@@ -482,7 +482,7 @@ def _make_skel_func(code, base_globals=None):
             # empty dictionary.
             base_globals = vars(importlib.import_module(base_globals))
         except ImportError:
-                base_globals = {}
+            base_globals = {}
 
     base_globals['__builtins__'] = __builtins__
 
