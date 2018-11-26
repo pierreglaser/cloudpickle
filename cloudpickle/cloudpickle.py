@@ -261,7 +261,8 @@ class CloudPickler(Pickler):
 
         code, f_globals, defaults, closure_values, dct, base_globals = self.extract_func_data(func)
         if closure_values is not None:
-            raise NotImplementedError
+            raise pickle.PicklingError('cannot pickle a function with a '
+                                       'non-empty closure')
 
         save(_fill_function)  # skeleton function updater
         write(pickle.MARK)    # beginning of tuple that _fill_function expects
