@@ -290,11 +290,9 @@ class CloudPickler(Pickler):
             'module': func.__module__,
             'name': func.__name__,
             'doc': func.__doc__,
+            'annotations': func.__annotations__,
+            'qualname': func.__qualname__
         }
-        if hasattr(func, '__annotations__') and sys.version_info >= (3, 7):
-            state['annotations'] = func.__annotations__
-        if hasattr(func, '__qualname__'):
-            state['qualname'] = func.__qualname__
         save(state)
         write(pickle.TUPLE)
         write(pickle.REDUCE)  # applies _fill_function on the tuple
