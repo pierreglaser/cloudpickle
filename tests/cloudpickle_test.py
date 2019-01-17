@@ -210,36 +210,6 @@ class CloudPickleTest(unittest.TestCase):
             msg='g now has closure cells even though f does not',
         )
 
-    def test_empty_cell_preserved(self):
-        def f():
-            if False:  # pragma: no cover
-                cell = None
-
-            def g():
-                cell  # NameError, unbound free variable
-
-            return g
-
-        g1 = f()
-        with pytest.raises(NameError):
-            g1()
-
-        g2 = pickle_depickle(g1, protocol=self.protocol)
-        with pytest.raises(NameError):
-            g2()
-
-    def test_unhashable_closure(self):
-        def f():
-            s = {1, 2}  # mutable set is unhashable
-
-            def g():
-                return len(s)
-
-            return g
-
-        g = pickle_depickle(f(), protocol=self.protocol)
-        self.assertEqual(g(), 2)
-
     def test_dynamically_generated_class_that_uses_super(self):
 
         class Base(object):
@@ -661,15 +631,6 @@ class CloudPickleTest(unittest.TestCase):
     def test_NotImplementedType(self):
         res = pickle_depickle(type(NotImplemented), protocol=self.protocol)
         self.assertEqual(type(NotImplemented), res)
-
-    def test_builtin_function_without_module(self):
-        on = object.__new__
-        on_depickled = pickle_depickle(on, protocol=self.protocol)
-        self.assertEqual(type(on_depickled(object)), type(object()))
-
-        fi = itertools.chain.from_iterable
-        fi_depickled = pickle_depickle(fi, protocol=self.protocol)
-        self.assertEqual(list(fi_depickled([[1, 2], [3, 4]])), [1, 2, 3, 4])
 
     @pytest.mark.skipif(tornado is None,
                         reason="test needs Tornado installed")
