@@ -193,23 +193,6 @@ class CloudPickleTest(unittest.TestCase):
         g2 = pickle_depickle(f2(2), protocol=self.protocol)
         self.assertEqual(g2(5), 240)
 
-    def test_closure_none_is_preserved(self):
-        def f():
-            """a function with no closure cells
-            """
-
-        self.assertTrue(
-            f.__closure__ is None,
-            msg='f actually has closure cells!',
-        )
-
-        g = pickle_depickle(f, protocol=self.protocol)
-
-        self.assertTrue(
-            g.__closure__ is None,
-            msg='g now has closure cells even though f does not',
-        )
-
     def test_dynamically_generated_class_that_uses_super(self):
 
         class Base(object):
@@ -470,38 +453,6 @@ class CloudPickleTest(unittest.TestCase):
 
         finally:
             os.unlink(pickled_module_path)
-
-    def test_module_locals_behavior(self):
-        # Makes sure that a local function defined in another module is
-        # correctly serialized. This notably checks that the globals are
-        # accessible and that there is no issue with the builtins (see #211)
-
-        pickled_func_path = 'local_func_g.pkl'
-
-        child_process_script = '''
-        import pickle
-        import gc
-        with open("{pickled_func_path}", 'rb') as f:
-            func = pickle.load(f)
-
-        assert func(range(10)) == 45
-        '''
-
-        child_process_script = child_process_script.format(
-                pickled_func_path=pickled_func_path)
-
-        try:
-
-            from .testutils import make_local_function
-
-            g = make_local_function()
-            with open(pickled_func_path, 'wb') as f:
-                cloudpickle.dump(g, f, protocol=self.protocol)
-
-            assert_run_python_script(textwrap.dedent(child_process_script))
-
-        finally:
-            os.unlink(pickled_func_path)
 
     def test_load_dynamic_module_in_grandchild_process(self):
         # Make sure that when loaded, a dynamic module preserves its dynamic
@@ -1053,40 +1004,6 @@ class CloudPickleTest(unittest.TestCase):
             code = code_template.format(protocol=self.protocol,
                                         clone_func=clone_func)
             assert_run_python_script(textwrap.dedent(code))
-
-    def test_closure_interacting_with_a_global_variable(self):
-        global _TEST_GLOBAL_VARIABLE
-        assert _TEST_GLOBAL_VARIABLE == "default_value"
-        orig_value = _TEST_GLOBAL_VARIABLE
-        try:
-            def f0():
-                global _TEST_GLOBAL_VARIABLE
-                _TEST_GLOBAL_VARIABLE = "changed_by_f0"
-
-            def f1():
-                return _TEST_GLOBAL_VARIABLE
-
-            cloned_f0 = cloudpickle.loads(cloudpickle.dumps(
-                f0, protocol=self.protocol))
-            cloned_f1 = cloudpickle.loads(cloudpickle.dumps(
-                f1, protocol=self.protocol))
-            pickled_f1 = cloudpickle.dumps(f1, protocol=self.protocol)
-
-            # Change the value of the global variable
-            cloned_f0()
-            assert _TEST_GLOBAL_VARIABLE == "changed_by_f0"
-
-            # Ensure that the global variable is the same for another function
-            result_cloned_f1 = cloned_f1()
-            assert result_cloned_f1 == "changed_by_f0", result_cloned_f1
-            assert f1() == result_cloned_f1
-
-            # Ensure that unpickling the global variable does not change its
-            # value
-            result_pickled_f1 = cloudpickle.loads(pickled_f1)()
-            assert result_pickled_f1 == "changed_by_f0", result_pickled_f1
-        finally:
-            _TEST_GLOBAL_VARIABLE = orig_value
 
     def test_function_from_dynamic_module_with_globals_modifications(self):
         # This test verifies that the global variable state of a function
