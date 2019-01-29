@@ -1,3 +1,10 @@
+0.8.0
+=====
+
+- Global variables contained in pickle strings will override existing
+  variables when loaded in their new environment.
+
+
 0.7.0
 =====
 
