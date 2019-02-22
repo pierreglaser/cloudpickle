@@ -899,7 +899,7 @@ class CloudPickleTest(unittest.TestCase):
         # some setup is required to allow pytest apimodules to be correctly
         # serializable.
         from cloudpickle import CloudPickler
-        CloudPickler.dispatch[type(py.builtin)] = CloudPickler.save_module
+        CloudPickler.dispatch[type(py.builtin)] = cloudpickle.module_reduce
         g = cloudpickle.loads(cloudpickle.dumps(f, protocol=self.protocol))
 
         result = g()
@@ -922,6 +922,9 @@ class CloudPickleTest(unittest.TestCase):
         func.__qualname__ = '<modifiedlambda>'
         cloned = pickle_depickle(func, protocol=self.protocol)
         self.assertEqual(cloned.__qualname__, func.__qualname__)
+
+    # @pytest.mark.skipif(sys.version_info >= (3, 8),
+    #                     reason="pickling namedtuple is broken on 3.8")
 
     def test_namedtuple(self):
 
