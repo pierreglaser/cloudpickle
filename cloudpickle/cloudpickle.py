@@ -231,6 +231,90 @@ _BUILTIN_TYPE_CONSTRUCTORS = {
     object.__new__: _get_object_new,
 }
 
+_extract_code_globals_cache = (
+    weakref.WeakKeyDictionary()
+    if not hasattr(sys, "pypy_version_info")
+    else {})
+
+
+def extract_code_globals(co):
+    """
+    Find all globals names read or written to by codeblock co
+    """
+    out_names = _extract_code_globals_cache.get(co)
+    if out_names is None:
+        try:
+            names = co.co_names
+        except AttributeError:
+            # PyPy "builtin-code" object
+            out_names = set()
+        else:
+            out_names = {names[oparg] for _, oparg in _walk_global_ops(co)}
+
+            # Declaring a function inside another one using the "def ..."
+            # syntax generates a constant code object corresonding to the one
+            # of the nested function's As the nested function may itself need
+            # global variables, we need to introspect its code, extract its
+            # globals, (look for code object in it's co_consts attribute..) and
+            # add the result to code_globals
+            if co.co_consts:
+                for const in co.co_consts:
+                    if isinstance(const, types.CodeType):
+                        out_names |= extract_code_globals(const)
+
+        _extract_code_globals_cache[co] = out_names
+
+    return out_names
+
+
+def _find_loaded_submodules(code, top_level_dependencies):
+    """
+    Save submodules used by a function but not listed in its globals.
+
+    In the example below:
+
+    ```
+    import concurrent.futures
+    import cloudpickle
+
+
+    def func():
+        x = concurrent.futures.ThreadPoolExecutor
+
+
+    if __name__ == '__main__':
+        cloudpickle.dumps(func)
+    ```
+
+    the globals extracted by cloudpickle in the function's state include
+    the concurrent module, but not its submodule (here,
+    concurrent.futures), which is the module used by func.
+
+    To ensure that calling the depickled function does not raise an
+    AttributeError, this function looks for any currently loaded submodule
+    that the function uses and whose parent is present in the function
+    globals, and saves it before saving the function.
+    """
+
+    subimports = []
+    # check if any known dependency is an imported package
+    for x in top_level_dependencies:
+        if (isinstance(x, types.ModuleType) and
+                hasattr(x, '__package__') and x.__package__):
+            # check if the package has any currently loaded sub-imports
+            prefix = x.__name__ + '.'
+            # A concurrent thread could mutate sys.modules,
+            # make sure we iterate over a copy to avoid exceptions
+            for name in list(sys.modules):
+                # Older versions of pytest will add a "None" module to
+                # sys.modules.
+                if name is not None and name.startswith(prefix):
+                    # check whether the function can address the sub-module
+                    tokens = set(name[len(prefix):].split('.'))
+                    if not tokens - set(code.co_names):
+                        subimports.append(sys.modules[name])
+    return subimports
+
 
 if sys.version_info < (3, 4):  # pragma: no branch
     def _walk_global_ops(code):
@@ -432,53 +516,6 @@ class CloudPickler(Pickler):
 
     dispatch[types.FunctionType] = save_function
 
-    def _save_subimports(self, code, top_level_dependencies):
-        """
-        Save submodules used by a function but not listed in its globals.
-
-        In the example below:
-
-        ```
-        import concurrent.futures
-        import cloudpickle
-
-
-        def func():
-            x = concurrent.futures.ThreadPoolExecutor
-
-
-        if __name__ == '__main__':
-            cloudpickle.dumps(func)
-        ```
-
-        the globals extracted by cloudpickle in the function's state include
-        the concurrent module, but not its submodule (here,
-        concurrent.futures), which is the module used by func.
-
-        To ensure that calling the depickled function does not raise an
-        AttributeError, this function looks for any currently loaded submodule
-        that the function uses and whose parent is present in the function
-        globals, and saves it before saving the function.
-        """
-
-        # check if any known dependency is an imported package
-        for x in top_level_dependencies:
-            if isinstance(x, types.ModuleType) and hasattr(x, '__package__') and x.__package__:
-                # check if the package has any currently loaded sub-imports
-                prefix = x.__name__ + '.'
-                # A concurrent thread could mutate sys.modules,
-                # make sure we iterate over a copy to avoid exceptions
-                for name in list(sys.modules):
-                    # Older versions of pytest will add a "None" module to sys.modules.
-                    if name is not None and name.startswith(prefix):
-                        # check whether the function can address the sub-module
-                        tokens = set(name[len(prefix):].split('.'))
-                        if not tokens - set(code.co_names):
-                            # ensure unpickler executes this import
-                            self.save(sys.modules[name])
-                            # then discards the reference to it
-                            self.write(pickle.POP)
-
     def save_dynamic_class(self, obj):
         """
         Save a class that can't be stored as module global.
@@ -581,10 +618,16 @@ class CloudPickler(Pickler):
         save(_fill_function)  # skeleton function updater
         write(pickle.MARK)    # beginning of tuple that _fill_function expects
 
-        self._save_subimports(
+        subimports = _find_loaded_submodules(
             code,
             itertools.chain(f_globals.values(), closure_values or ()),
         )
+        for s in subimports:
+            # ensure that subimport s is loaded at unpickling time
+            self.save(s)
+            # then discards the reference to it
+            self.write(pickle.POP)
+
 
         # create a skeleton function object and memoize it
         save(_make_skel_func)
@@ -616,36 +659,6 @@ class CloudPickler(Pickler):
         write(pickle.TUPLE)
         write(pickle.REDUCE)  # applies _fill_function on the tuple
 
-    _extract_code_globals_cache = (
-        weakref.WeakKeyDictionary()
-        if not hasattr(sys, "pypy_version_info")
-        else {})
-
-    @classmethod
-    def extract_code_globals(cls, co):
-        """
-        Find all globals names read or written to by codeblock co
-        """
-        out_names = cls._extract_code_globals_cache.get(co)
-        if out_names is None:
-            try:
-                names = co.co_names
-            except AttributeError:
-                # PyPy "builtin-code" object
-                out_names = set()
-            else:
-                out_names = {names[oparg] for _, oparg in _walk_global_ops(co)}
-
-                # see if nested function have any global refs
-                if co.co_consts:
-                    for const in co.co_consts:
-                        if type(const) is types.CodeType:
-                            out_names |= cls.extract_code_globals(const)
-
-            cls._extract_code_globals_cache[co] = out_names
-
-        return out_names
-
     def extract_func_data(self, func):
         """
         Turn the function into a tuple of data necessary to recreate it:
@@ -654,7 +667,7 @@ class CloudPickler(Pickler):
         code = func.__code__
 
         # extract all global ref's
-        func_global_refs = self.extract_code_globals(code)
+        func_global_refs = extract_code_globals(code)
 
         # process all variables referenced by global environment
         f_globals = {}
