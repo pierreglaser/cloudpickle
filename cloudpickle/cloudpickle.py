@@ -218,7 +218,7 @@ _extract_code_globals_cache = (
     else {})
 
 
-def extract_code_globals(co):
+def _extract_code_globals(co):
     """
     Find all globals names read or written to by codeblock co
     """
@@ -241,7 +241,7 @@ def extract_code_globals(co):
             if co.co_consts:
                 for const in co.co_consts:
                     if isinstance(const, types.CodeType):
-                        out_names |= extract_code_globals(const)
+                        out_names |= _extract_code_globals(const)
 
         _extract_code_globals_cache[co] = out_names
 
@@ -646,7 +646,7 @@ class CloudPickler(Pickler):
         code = func.__code__
 
         # extract all global ref's
-        func_global_refs = extract_code_globals(code)
+        func_global_refs = _extract_code_globals(code)
 
         # process all variables referenced by global environment
         f_globals = {}
