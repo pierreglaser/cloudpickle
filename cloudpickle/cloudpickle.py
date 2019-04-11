@@ -287,7 +287,7 @@ def _find_loaded_submodules(code, top_level_dependencies):
     ```
 
     the globals extracted by cloudpickle in the function's state include
-    the concurrent module, but not its submodule (here,
+    the concurrent package, but not its submodule (here,
     concurrent.futures), which is the module used by func.
 
     To ensure that calling the depickled function does not raise an
