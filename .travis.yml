@@ -77,7 +77,7 @@ before_install:
         pushd ..;
         git clone https://github.com/pierreglaser/cpython.git;
         pushd cpython;
-        git checkout add-global-hook;
+        git checkout state-setter-global-hook;
         ./configure;
         make;
         ./python -m venv "$VENV_DIR";
