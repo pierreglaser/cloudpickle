@@ -16,6 +16,7 @@ import types
 import weakref
 
 from _pickle import Pickler
+from pickle import _getattribute
 
 from .cloudpickle import (
     islambda, _is_dynamic, _extract_code_globals, _BUILTIN_TYPE_CONSTRUCTORS,
@@ -436,33 +437,88 @@ def _dynamic_class_reduce(obj):
     )
 
 
+def whichmodule(obj, name):
+    """Find the module an object belong to.
+
+    This functions differs from pickle.whichmodule in the fact that if obj
+    could not be found in any module, None is returned instead of __main__"""
+    module_name = getattr(obj, '__module__', None)
+    if module_name is not None:
+        return module_name
+    # Protect the iteration by using a list copy of sys.modules against dynamic
+    # modules that trigger imports of other modules upon calls to getattr.
+    for module_name, module in list(sys.modules.items()):
+        if module_name == '__main__' or module is None:
+            continue
+        try:
+            if _getattribute(module, name)[0] is obj:
+                return module_name
+        except AttributeError:
+            pass
+    return None
+
+
 def _class_reduce(obj):
     """Select the reducer depending on the dynamic nature of the class obj"""
-    # XXX: there used to be special handling for NoneType, EllipsisType and
-    # NotImplementedType. As for now this module handles only python3.8+, this
-    # code has been removed.
-    if obj.__module__ == "__main__":
+
+    name = getattr(obj, '__qualname__', None)
+    if name is None:
+        name = obj.__name__
+
+    try:
+        # whichmodule() could fail, see
+        # https://bitbucket.org/gutworth/six/issues/63/importing-six-breaks-pickling
+        module_name = pickle.whichmodule(obj, name)
+    except Exception:
+        module_name = None
+
+    # whichmodule returns either None or a string.
+    module_name = whichmodule(obj, obj.__qualname__)
+
+    if module_name is None:
+        # In this case, obj.__module__ is None AND obj was not found in any
+        # imported module. obj is thus treated as dynamic.
+        return _dynamic_class_reduce(obj)
+
+    if module_name == "__main__":
+        return _dynamic_class_reduce(obj)
+
+    if module_name not in sys.modules:
+        # The main reason why obj's module would not be imported is that this
+        # module has been dynamically created, using for example
+        # types.ModuleType. The other possibility is that module was removed
+        # from sys.modules after obj was created/imported. But this case is not
+        # supported, as the standard pickle does not support it either.
+        return _dynamic_class_reduce(obj)
+
+    module = sys.modules[module_name]
+    if module is None:
+        return NotImplementedError
+
+    if _is_dynamic(module):
+        # module has been added to sys.modules, but it can still be dynamic.
         return _dynamic_class_reduce(obj)
 
     try:
-        # All classes are caught in this function: pickleable classes are
-        # filtered out by creating a Pickler with no custom class reducer
-        # (thus, falling back to save_global). If it fails to save obj, then
-        # obj is either a non-pickleable builtin or dynamic.
-        pickle.dumps(obj)
-    except Exception:
+        obj2, parent = _getattribute(module, name)
+    except AttributeError:
+        # if obj could not be found as an attribute of its module, either
+        # - obj is nested
+        # - obj is a builtin, but was not exposed inside the builtins module
+        # - obj's __name__ or __module__ attribute was hacked.
         if obj.__module__ == "builtins":
             if obj in _BUILTIN_TYPE_NAMES:
                 return _builtin_type_reduce(obj)
 
-        typ = type(obj)
-        if typ is not obj and isinstance(obj, type):  # noqa: E721
+            return NotImplementedError
+        return _dynamic_class_reduce(obj)
+    else:
+        if obj2 is not obj:
             return _dynamic_class_reduce(obj)
 
-    else:
-        # if pickle.dumps worked out fine, then simply fallback to the
-        # traditional pickle by attribute # implemented in the builtin
-        # `Pickler.save_global`.
+        # Finally, if obj2 is obj, obj is a top-level object of a file-backed
+        # module.  We can simply fallback to the traditional pickle by
+        # attribute implemented in the builtin `Pickler.save_global`.
         return NotImplementedError
 
 
@@ -585,10 +641,10 @@ class CloudPickler(Pickler):
         # will likely not be known in advance, and thus cannot be special-cased
         # using an entry in the dispatch_table.
 
-        # The pickler's global_hook, among other things, allows us to register
-        # a reducer that will be called for any class, independently of its
-        # type.
-        self.global_hook = _reduce_global
+        # The pickler's reducer_override, among other things, allows us to
+        # register a reducer that will be called for any class, independently
+        # of its type.
+        self.reducer_override = _reduce_global
         self.proto = int(protocol)
 
     def dump(self, obj):
