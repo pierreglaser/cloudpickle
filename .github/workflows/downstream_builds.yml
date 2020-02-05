@@ -27,14 +27,32 @@ jobs:
     - run: git checkout pr/${{ github.event.issue.number }}
     - run: |
         echo "::set-env name=GITHUB_PR_SHA::$(git rev-parse HEAD)"
-    - uses: actions/github-script@0.4.0
+      # Create check run
+    - uses: octokit/request-action@v2.x
+      id: create_check_run
       with:
-        github-token: ${{secrets.GITHUB_TOKEN}}
-        script: |
-          github.checks.create({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            name: "downstream_build",
-            head_sha: "${{ env.GITHUB_PR_SHA }}",
-            status: "in_progress"
-          })
+        route: POST /repos/:repository/check-runs
+        repository: ${{ github.repository }}
+        name: "Run downstream builds"
+        mediaType: '{"previews": ["antiope"]}'
+        head_sha: ${{ env.GITHUB_PR_SHA }}
+        output: '{"title":"Test check run title","summary": "A summary of the test check run"}'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - id: parse_create_check_run
+      uses: gr2m/get-json-paths-action@v1.x
+      with:
+        json: ${{ steps.create_check_run.outputs.data }}
+        id: "id"
+    # Update check run to completed, succesful status
+    - uses: octokit/request-action@v2.x
+      id: update_check_run
+      with:
+        route: PATCH /repos/:repository/check-runs/:check_run_id
+        repository: ${{ github.repository }}
+        mediaType: '{"previews": ["antiope"]}'
+        check_run_id: ${{ steps.parse_create_check_run.outputs.id }}
+        conclusion: "success"
+        status: "completed"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
