@@ -19,7 +19,7 @@ jobs:
         echo test, and deploy your project.
 
   add-downstream-check:
-    name: downstream builds
+    name: Downstream builds
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
