@@ -11,28 +11,15 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - run: git fetch --depth=1 origin +refs/pull/*/head:refs/remotes/origin/pr/*
-    - run: git checkout pr/5
     - name: Run a one-line script
       run: echo Hello from a downstream build
     - name: Run a multi-line script
       run: |
         echo Add other actions to build,
         echo test, and deploy your project.
-    - uses: actions/github-script@0.4.0
-      with:
-        github-token: ${{secrets.GITHUB_TOKEN}}
-        script: |
-          github.checks.create({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            name: "downstream_build",
-            head_sha: "${{ github.sha }}",
-            status: "in_progress"
-          })
 
   add-downstream-check:
-    name: Downstream builds
+    name: downstream builds
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
