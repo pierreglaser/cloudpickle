@@ -3,7 +3,6 @@ name: Downstream Builds
 on:
   issue_comment:
     types: [created]
-  push:
 
 jobs:
   build:
