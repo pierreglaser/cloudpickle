@@ -19,3 +19,19 @@ jobs:
       run: |
         echo Add other actions to build,
         echo test, and deploy your project.
+
+  add-downstream-check:
+    name: downstream builds
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/github-script@0.4.0
+      with:
+        script: |
+          github.checks.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            name: "downstream_build",
+            head_sha: github.sha,
+            status: in_progress
+          })
