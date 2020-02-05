@@ -19,6 +19,17 @@ jobs:
       run: |
         echo Add other actions to build,
         echo test, and deploy your project.
+    - uses: actions/github-script@0.4.0
+      with:
+        github-token: ${{secrets.GITHUB_TOKEN}}
+        script: |
+          github.checks.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            name: "downstream_build",
+            head_sha: "${{ github.sha }}",
+            status: "in_progress"
+          })
 
   add-downstream-check:
     name: Downstream builds
