@@ -11,7 +11,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - run: git fetch --depth=1 +refs/tags/*:refs/tags/* +refs/pull/*/head:refs/remotes/origin/pr/*
+    - run: git fetch --depth=1 origin +refs/tags/*:refs/tags/* +refs/pull/*/head:refs/remotes/origin/pr/*
     - name: Run a one-line script
       run: echo Hello from a downstream build
     - name: Run a multi-line script
