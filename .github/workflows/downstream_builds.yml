@@ -26,6 +26,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+    - run: git fetch --depth=1 origin +refs/pull/*/head:refs/remotes/origin/pr/*
+    - run: git checkout pr/${{ github.event.client_payload.github.payload.issue.number }}
     - uses: actions/github-script@0.4.0
       with:
         github-token: ${{secrets.GITHUB_TOKEN}}
