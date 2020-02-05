@@ -24,7 +24,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - run: git fetch --depth=1 origin +refs/pull/*/head:refs/remotes/origin/pr/*
-    - run: git checkout pr/${{ github.event.issue.number }}
+    - run: git checkout pr/7
     - run: |
         echo "::set-env name=GITHUB_PR_SHA::$(git rev-parse HEAD)"
       # Create check run
