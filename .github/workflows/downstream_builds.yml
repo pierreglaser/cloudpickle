@@ -34,5 +34,5 @@ jobs:
             repo: context.repo.repo,
             name: "downstream_build",
             head_sha: github.sha,
-            status: in_progress
+            status: "in_progress"
           })
