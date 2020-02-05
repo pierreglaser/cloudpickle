@@ -24,7 +24,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - run: git fetch --depth=1 origin +refs/pull/*/head:refs/remotes/origin/pr/*
-    - run: git checkout pr/${{ github.event.pull_request.number }}
+    - run: git checkout pr/${{ github.event.issue.number }}
     - uses: actions/github-script@0.4.0
       with:
         github-token: ${{secrets.GITHUB_TOKEN}}
