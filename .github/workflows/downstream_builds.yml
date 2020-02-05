@@ -12,7 +12,6 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - run: git fetch --depth=1 origin +refs/pull/*/head:refs/remotes/origin/pr/*
-    - uses: actions/checkout@v2
     - run: git checkout pr/5
     - name: Run a one-line script
       run: echo Hello from a downstream build
