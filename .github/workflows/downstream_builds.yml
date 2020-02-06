@@ -23,7 +23,7 @@ jobs:
     name: Downstream builds
     runs-on: ubuntu-latest
     # if: startsWith(github.event.issue.body, "/run ci-downstream")
-    if: startsWith(github.event.head_commit.message, "\/run ci-downstream")
+    if: startsWith(github.event.head_commit.message, "run ci-downstream")
     steps:
     - uses: actions/checkout@v2
     - run: git fetch --depth=1 origin +refs/pull/*/head:refs/remotes/origin/pr/*
