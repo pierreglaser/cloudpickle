@@ -1,12 +1,10 @@
 name: Optional Builds
 
 on:
-  check_suite:
-    types:
-      - rerequested
+  push:
 
 jobs:
-  build:
+  optional build:
 
     runs-on: ubuntu-latest
 
