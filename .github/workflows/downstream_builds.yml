@@ -22,6 +22,7 @@ jobs:
       id: list_check_suites
       with:
         route: GET /repos/:owner/:repo/commits/:ref/check-suites
+        mediaType: '{"previews": ["antiope"]}'
         repo: "cloudpickle"
         owner: "pierreglaser"
         ref: "${{ github.sha }}"
