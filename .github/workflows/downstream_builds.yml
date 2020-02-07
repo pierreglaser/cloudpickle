@@ -38,7 +38,7 @@ jobs:
         json: ${{ steps.list_check_suites.outputs.data }}
         id: "check_suites[0].id"
     - run: |
-        echo ${{ steps.parse_create_check_run.outputs.check_suites[0].id }}
+        echo ${{ steps.parse_create_check_run.outputs.id }}
 
 
   add-downstream-check:
