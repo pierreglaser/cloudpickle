@@ -25,6 +25,8 @@ jobs:
         repository: "cloudpickle"
         owner: "pierreglaser"
         ref: ${{ github.event.head_commit.sha }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     - env:
         CHECK_SUITES: ${{ toJson(steps.list_check_suites.outputs) }}
       run: |
