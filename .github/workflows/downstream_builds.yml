@@ -32,6 +32,14 @@ jobs:
         CHECK_SUITES: ${{ toJson(steps.list_check_suites.outputs) }}
       run: |
         echo "$CHECK_SUITES" | python -m json.tool
+    - id: parse_create_check_run
+      uses: gr2m/get-json-paths-action@v1.x
+      with:
+        json: ${{ steps.list_check_suites.outputs.data }}
+        id: "check_suites[0].id"
+    - run: |
+        echo ${{ steps.parse_create_check_run.outputs.check_suites[0].id }}
+
 
   add-downstream-check:
     name: Downstream builds
