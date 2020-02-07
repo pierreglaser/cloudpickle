@@ -24,8 +24,13 @@ jobs:
     if: "startsWith(github.event.comment.body, '/run ci-downstream') || startsWith(github.event.comment.body, '/run ci-ray')"
     steps:
     - uses: actions/checkout@v2
-    - run: git fetch --depth=1 origin +refs/pull/*/head:refs/remotes/origin/pr/*
-    - run: git checkout pr/${{ github.event.issue.number }}
+    - name: "Checkout the associated pull request's HEAD"
+      # If the comment comes from a simple issue (and not a PR), run the
+      # downstream builds on master.
+      if: "github.event.issue.pull_request != ''"
+      with:
+        ref: ${{ github.event.issue.pull_request.head.sha }}
+    # Export the current head's SHA. Can be either master's of a PR head's
     - run: |
         echo "::set-env name=GITHUB_PR_SHA::$(git rev-parse HEAD)"
       # Create check run
