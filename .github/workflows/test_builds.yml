@@ -1,0 +1,20 @@
+name: Optional Builds
+
+on:
+  check_suite:
+    types:
+      - rerequested
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run a one-line script
+      run: echo Hello from a downstream build
+    - name: Run a multi-line script
+      run: |
+        echo Add other actions to build,
+        echo test, and deploy your project.
