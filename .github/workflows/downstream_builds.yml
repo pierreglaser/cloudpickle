@@ -24,7 +24,7 @@ jobs:
         route: GET /repos/:owner/:repo/commits/:ref/check-suites
         repository: "cloudpickle"
         owner: "pierreglaser"
-        ref: ${{ github.event.head }}
+        ref: ${{ github.sha }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     - env:
