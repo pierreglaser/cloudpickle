@@ -21,6 +21,7 @@ jobs:
   add-downstream-check:
     name: downstream builds
     runs-on: ubuntu-latest
+    if: "startsWith(github.event.issue.body, '/run ci-downstream') || startsWith(github.event.issue.body, '/run ci-ray')"
     steps:
     - uses: actions/checkout@v2
     - run: git fetch --depth=1 origin +refs/pull/*/head:refs/remotes/origin/pr/*
