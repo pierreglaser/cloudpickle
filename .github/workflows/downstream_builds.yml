@@ -31,7 +31,7 @@ jobs:
     - env:
         CHECK_SUITES: ${{ toJson(steps.list_check_suites.outputs) }}
       run: |
-        echo "$CHECK_SUITES"
+        echo "$CHECK_SUITES" | python -m json.tool
 
   add-downstream-check:
     name: Downstream builds
