@@ -26,12 +26,12 @@ jobs:
     if: "startsWith(github.event.head_commit.message, '/run ci-downstream') || startsWith(github.event.head_commit.message, '/run ci-ray')"
     steps:
     - uses: actions/checkout@v2
-    - run: git fetch --depth=1 origin +refs/pull/*/head:refs/remotes/origin/pr/*
     # I hard-code the pr number here because I don't have access to
     # github.event.issue.number when iterating on "push" workflows (as
     # issue_commment) workflows only get updated when master is changed
-    - run: git checkout pr/7
     - run: |
+        git fetch --depth=1 origin +refs/pull/*/head:refs/remotes/origin/pr/*
+        git checkout pr/7
         echo "::set-env name=GITHUB_PR_SHA::$(git rev-parse HEAD)"
       # Create check run
     - uses: octokit/request-action@v2.x
