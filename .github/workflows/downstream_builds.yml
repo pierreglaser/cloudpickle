@@ -18,11 +18,22 @@ jobs:
       run: |
         echo Add other actions to build,
         echo test, and deploy your project.
+    - uses: octokit/request-action@v2.x
+      id: list_check_suites
+      with:
+        route: GET /repos/:owner/:repo/commits/:ref/check-suites
+        repository: "cloudpickle"
+        owner: "pierreglaser"
+        ref: ${{ github.event.head_commit.sha }}
+    - env:
+        CHECK_SUITES: ${{ toJson(steps.list_check_suites.outputs) }}
+      run: |
+        echo "$CHECK_SUITES"
 
   add-downstream-check:
     name: Downstream builds
     runs-on: ubuntu-latest
-    # if: startsWith(github.event.issue.body, "/run ci-downstream")
+    # if: "startsWith(github.event.comment.body, '/run ci-downstream') || startsWith(github.event.comment.body, '/run ci-ray')"
     if: "startsWith(github.event.head_commit.message, '/run ci-downstream') || startsWith(github.event.head_commit.message, '/run ci-ray')"
     steps:
     - uses: actions/checkout@v2
