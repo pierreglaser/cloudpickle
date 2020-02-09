@@ -7,6 +7,7 @@ on:
 jobs:
   pull-request-edited-workflow:
     name: pull request edited
+    if: "github.event.changes.title.from != '' && startsWith(github.event.pull_request.title, '[ci-downstream]')"
     runs-on: ubuntu-latest
     steps:
       - name: Dump GitHub context
