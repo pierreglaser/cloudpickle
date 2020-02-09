@@ -12,15 +12,11 @@ jobs:
         env:
           GITHUB_CONTEXT: ${{ toJson(github.event) }}
         run: echo "$GITHUB_CONTEXT"
-      # - name: "Checkout the associated pull request's HEAD"
-      #   uses: actions/checkout@v2
-      #   with:
-      #     ref: ${{ github.event.issue.pull_request.head.sha }}
-      # # Export the current head's SHA. Can be either master's of a PR head's
-      # - uses: actions/checkout@v2
-      # - run: |
-      #     echo "::set-env name=GITHUB_PR_SHA::$(git rev-parse HEAD)"
-      #   # Create check run
+      - uses: actions/checkout@v2
+      - run: git fetch --depth=1 origin +refs/pull/*/head:refs/remotes/origin/pr/*
+      - run: git checkout pr/${{ github.event.issue.number }}
+      - run: |
+          echo "::set-env name=GITHUB_PR_SHA::$(git rev-parse HEAD)"
       # - name: Repository Dispatch
       #   uses: peter-evans/repository-dispatch@v1
       #   with:
