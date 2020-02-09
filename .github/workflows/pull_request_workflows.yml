@@ -4,6 +4,7 @@ on:
 
 jobs:
   pull-request-event:
+    if: "contains(github.event.pull_request.labels, 'ci-downstream')"
     runs-on: ubuntu-latest
     steps:
       - run: echo "It worked"
