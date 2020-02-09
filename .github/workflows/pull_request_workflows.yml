@@ -5,6 +5,7 @@ on:
 jobs:
   pull-request-event:
     runs-on: ubuntu-latest
+    if: "contains(github.event.pull_request.labels.*.name, 'ci-downstream')"
     steps:
       - name: Dump GitHub context
         env:
