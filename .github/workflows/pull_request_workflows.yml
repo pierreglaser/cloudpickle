@@ -1,0 +1,9 @@
+name: Pull Request Workflows
+on:
+  pull_request:
+
+jobs:
+  pull-request-event:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "It worked"
