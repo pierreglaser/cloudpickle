@@ -4,7 +4,10 @@ on:
 
 jobs:
   pull-request-event:
-    if: "contains(github.event.pull_request.labels, 'ci-downstream')"
     runs-on: ubuntu-latest
     steps:
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github.event) }}
+        run: echo "$GITHUB_CONTEXT"
       - run: echo "It worked"
